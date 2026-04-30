@@ -28,6 +28,6 @@ public class BookAuthor {
     private Book book;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "book_id", nullable = false)
+    @JoinColumn(name = "author_id", nullable = false)
     private Author author;
 }
