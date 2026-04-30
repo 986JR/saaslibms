@@ -63,10 +63,6 @@
         </dependency>
 
         <!-- Flyway (DB migrations) -->
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-        </dependency>
 
         <!-- JWT -->
         <dependency>
@@ -114,6 +110,7 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+
 
     </dependencies>
 
