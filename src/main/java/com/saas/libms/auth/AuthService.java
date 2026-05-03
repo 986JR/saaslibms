@@ -134,7 +134,7 @@ public class AuthService {
                 userDetails.getUsername(),
                 userDetails.getEmail(),
                 userDetails.getRole(),
-                userDetails.getUser().getInstitution()
+                userDetails.getUser().getInstitution().getPublicId()
         );
         return LoginResponse.of(accessToken,userSummaryDto);
 

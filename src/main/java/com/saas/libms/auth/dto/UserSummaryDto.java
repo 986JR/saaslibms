@@ -10,6 +10,6 @@ public record UserSummaryDto(
         String Username,
         String email,
         String role,
-        Institution institutionId
+        String institutionId
 ) {
 }
