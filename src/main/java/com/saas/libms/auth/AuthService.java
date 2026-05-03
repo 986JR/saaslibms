@@ -171,7 +171,7 @@ public class AuthService {
                 userDetails.getUsername());
 
         //Generate new refresh token and save
-        String newRefreshTokenHash = UUID.randomUUID().toString();
+        String newRefreshTokenHash = TokenHashUtil.hash(UUID.randomUUID().toString());
         RefreshSession newSession = RefreshSession.builder()
                 .user(userDetails.getUser())
                 .expiresAt(LocalDateTime.now().plusHours(10))
@@ -180,7 +180,7 @@ public class AuthService {
                 .tokenHash(newRefreshTokenHash)
                 .institutionId(userDetails.getUser().getInstitution())
                 .build();
-        refreshSessionRepository.save(session);
+        refreshSessionRepository.save(newSession);
 //set new Cookie
         setRefreshCookie(httpServletResponse, newRefreshTokenHash, 36000);
 
