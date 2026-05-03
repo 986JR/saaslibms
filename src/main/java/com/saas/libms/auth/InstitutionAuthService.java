@@ -52,13 +52,13 @@ public class InstitutionAuthService {
                 .build();
         institutionRepository.save(institution);
 
-        // Generate a 6-char code and save it with a 24-hour expiry
+        // Generate a 6 char code and save it with 5mins expiry
         String code = PublicIdGenerator.generateVerificationCode();
 
         InstitutionVerification verification = InstitutionVerification.builder()
                 .institution(institution)
                 .verificationCode(code)
-                .expiesAt(LocalDateTime.now().plusHours(24))
+                .expiesAt(LocalDateTime.now().plusMinutes(5))
                 .verified(false)
                 .build();
         verificationRepository.save(verification);

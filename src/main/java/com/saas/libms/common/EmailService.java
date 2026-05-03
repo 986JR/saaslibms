@@ -69,7 +69,7 @@ public class EmailService {
                         display: inline-block;
                         margin: 16px 0;
                     ">%s</div>
-                    <p style="color: #7f8c8d;">This code expires in <strong>24 hours</strong>.</p>
+                    <p style="color: #7f8c8d;">This code expires in <strong>5 minutes</strong>.</p>
                     <p style="color: #7f8c8d; font-size: 13px;">
                         If you did not register, please ignore this email.
                     </p>
