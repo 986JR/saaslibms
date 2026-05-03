@@ -53,7 +53,12 @@ public class SecurityConfig {
 
                         // --- Public endpoints (no token needed) ---
                         .requestMatchers(
-                                "/api/v1/auth/**"               // all auth endpoints: register, verify, login, refresh
+                                "/api/v1/auth/institution/register",
+                                "/api/v1/auth/institution/verify",
+                                "/api/v1/auth/institution/setup-admin",
+                                "/api/v1/auth/login",    //
+                                "/api/v1/auth/refresh",  //
+                                "/api/v1/auth/logout"
                         ).permitAll()
 
                         // --- Everything else requires a valid JWT ---

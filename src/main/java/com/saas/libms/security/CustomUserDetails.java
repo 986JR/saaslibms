@@ -1,6 +1,8 @@
 package com.saas.libms.security;
 
+import com.saas.libms.institution.InstitutionStatus;
 import com.saas.libms.user.User;
+import com.saas.libms.user.UserStatus;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,7 +19,6 @@ import java.util.UUID;
  *  - password (hashed)
  *  - authorities/roles
  *  - account status flags
- *
  * We also carry extra fields (userId, institutionId) so we
  * can access them from any controller via the SecurityContext
  * without an extra DB call.
@@ -31,6 +32,9 @@ public class CustomUserDetails implements UserDetails {
     private final String password;
     private final String role;
     private final boolean enabled;
+    private final UserStatus status;
+    private final InstitutionStatus institutionStatus;
+    private final User user;
 
     public CustomUserDetails(User user) {
         this.userId        = user.getId();
@@ -43,6 +47,9 @@ public class CustomUserDetails implements UserDetails {
             case ACTIVE   -> true;
             case DISABLED -> false;
         };
+        this.status=user.getStatus();
+        this.institutionStatus=user.getInstitution().getStatus();
+        this.user = user;
     }
 
     // Spring Security uses this to check the password during login
@@ -65,7 +72,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return status == UserStatus.ACTIVE && institutionStatus == InstitutionStatus.ACTIVE;
     }
 
     // We manage expiry ourselves via the session table — these are always true
@@ -83,4 +90,6 @@ public class CustomUserDetails implements UserDetails {
     public boolean isCredentialsNonExpired() {
         return true;
     }
+
+
 }

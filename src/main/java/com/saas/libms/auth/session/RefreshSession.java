@@ -45,6 +45,9 @@ public class RefreshSession {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "device_info", columnDefinition = "TEXT")
+    private String deviceInfo;
+
     public boolean isExpired(){
         return LocalDateTime.now().isAfter(this.expiresAt);
     }
