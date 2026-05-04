@@ -21,7 +21,7 @@ public interface RefreshSessionRepository extends JpaRepository<RefreshSession, 
 
     @Modifying
     @Query("DELETE FROM RefreshSession rs WHERE rs.expiresAt < :now")
-    void deleteAllExpiredBefore(@Param("now")LocalDateTime now);
+    int deleteAllExpiredBefore(@Param("now")LocalDateTime now);
 
     @Query("SELECT COUNT(rs) > 0 FROM RefreshSession rs WHERE rs.user = :user AND rs.expiresAt > :now")
     boolean existsActiveSessionForUser(@Param("user") User user, @Param("now") LocalDateTime now);
