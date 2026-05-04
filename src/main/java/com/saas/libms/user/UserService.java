@@ -130,9 +130,23 @@ User saved = userRepository.save(target);
         }
 
         //Must be in same institution
-        User target = userRepository
-                .findByPublicAndInstitutionId(targetPublicId, currentUserEntity.getInstitution().getId())
-                ;
+        if(!userRepository.existsByPublicAndInstitutionId(targetPublicId,currentUserEntity.getInstitution().getId())){
+            throw new ForbiddenExecption("You must be in the same institution");
+        }
+
+        User target = userRepository.findByPublicAndInstitutionId(targetPublicId,currentUserEntity.getInstitution().getId());
+
+        //Cannot delete another admin
+        if (target.getRole() == UserRole.ADMIN) {
+            throw new ForbiddenExecption("You can not delete an Admin Account");
+        }
+        //Soft delete
+        target.setStatus(UserStatus.DISABLED);
+        userRepository.save(target);
+
+        log.info("[UserService] Admin {} disabled user {} in institution {}",
+                currentUserEntity.getPassword(),targetPublicId, currentUserEntity.getInstitution().getPublicId());
+
 
     }
 

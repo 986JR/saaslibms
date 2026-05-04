@@ -29,5 +29,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     List<User> findAllByInstitutionId(UUID institutionId);
 
-    User findByPublicAndInstitutionId(String publicId, UUID instititionId);
+    User findByPublicAndInstitutionId(String publicId, UUID institutionId);
+
+    boolean existsByPublicAndInstitutionId(String publicId, UUID institutionId);
 }
