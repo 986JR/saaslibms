@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,4 +26,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     // Used to check if an institution already has an admin user registered
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.institution.id = :institutionId AND u.role = 'ADMIN'")
     boolean existsAdminForInstitution(@Param("institutionId") UUID institutionId);
+
+    List<User> findAllByInstitutionId(UUID institutionId);
+
+    User findByPublicAndInstitutionId(String publicId, UUID instititionId);
 }
