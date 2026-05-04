@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -95,7 +94,7 @@ public class UserService {
         }
 
         //Uswer must be in the same isnititution
-        User target = userRepository.findByPublicAndInstitutionId(targetPublicId,
+        User target = userRepository.findByPublicIdAndInstitutionId(targetPublicId,
                 currentUserEntity.getInstitution().getId());
 
         if (isSelf) {
@@ -130,11 +129,11 @@ User saved = userRepository.save(target);
         }
 
         //Must be in same institution
-        if(!userRepository.existsByPublicAndInstitutionId(targetPublicId,currentUserEntity.getInstitution().getId())){
+        if(!userRepository.existsByPublicIdAndInstitutionId(targetPublicId,currentUserEntity.getInstitution().getId())){
             throw new ForbiddenExecption("You must be in the same institution");
         }
 
-        User target = userRepository.findByPublicAndInstitutionId(targetPublicId,currentUserEntity.getInstitution().getId());
+        User target = userRepository.findByPublicIdAndInstitutionId(targetPublicId,currentUserEntity.getInstitution().getId());
 
         //Cannot delete another admin
         if (target.getRole() == UserRole.ADMIN) {
