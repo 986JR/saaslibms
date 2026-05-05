@@ -6,7 +6,7 @@ import com.saas.libms.user.UserRole;
 import java.util.UUID;
 
 public record UserSummaryDto(
-        UUID publicId,
+        String publicId,
         String Username,
         String email,
         String role,

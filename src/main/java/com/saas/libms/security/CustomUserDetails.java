@@ -27,6 +27,8 @@ import java.util.UUID;
 public class CustomUserDetails implements UserDetails {
 
     private final UUID userId;
+    private final String publicId;
+    private final String name;
     private final UUID institutionId;
     private final String email;
     private final String password;
@@ -38,6 +40,8 @@ public class CustomUserDetails implements UserDetails {
 
     public CustomUserDetails(User user) {
         this.userId        = user.getId();
+        this.publicId      = user.getPublicId();
+        this.name      = user.getUsername();
         this.institutionId = user.getInstitution().getId();
         this.email         = user.getEmail();
         this.password      = user.getPassword();

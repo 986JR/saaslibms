@@ -57,13 +57,13 @@ public class UserController {
     }
 
     @PatchMapping("/{publicId}")
-    @PreAuthorize("isAuthnticated()")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponseDTO>> updateUser(
-            @PathVariable String publicID,
+            @PathVariable String publicId,
             @Valid @RequestBody UserUpdateDTO dto,
             @AuthenticationPrincipal CustomUserDetails currentUser
             ) {
-        UserResponseDTO updated = userService.updateUser(publicID, dto, currentUser);
+        UserResponseDTO updated = userService.updateUser(publicId, dto, currentUser);
         return ResponseEntity.ok(ApiResponse.success("User updated successfully",updated));
     }
 

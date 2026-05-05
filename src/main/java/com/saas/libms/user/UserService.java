@@ -1,5 +1,6 @@
 package com.saas.libms.user;
 
+import com.saas.libms.common.PublicIdGenerator;
 import com.saas.libms.exception.ConflictException;
 import com.saas.libms.exception.ForbiddenExecption;
 import com.saas.libms.institution.Institution;
@@ -44,6 +45,8 @@ public class UserService {
         user.setEmail(dto.email());
         user.setPassword(passwordEncoder.encode(dto.password()));
         user.setStatus(UserStatus.ACTIVE);
+        user.setPublicId(PublicIdGenerator.generate("USER"));
+        user.setRole(UserRole.LIBRARIAN);
         user.setInstitution(institution);
 
         User saved = userRepository.save(user);
@@ -120,16 +123,19 @@ User saved = userRepository.save(target);
         User currentUserEntity = currentUser.getUser();
 
         if(currentUserEntity.getRole() != UserRole.ADMIN) {
+            System.out.println("here 1");
             throw new ForbiddenExecption("Only Admins Can Delete Users");
         }
 
         //should not delete self
         if (currentUserEntity.getPublicId().equals(targetPublicId)) {
+            System.out.println("here 2");
             throw new ForbiddenExecption("You can not Delete Your own Account");
         }
 
         //Must be in same institution
         if(!userRepository.existsByPublicIdAndInstitutionId(targetPublicId,currentUserEntity.getInstitution().getId())){
+            System.out.println("here 3");
             throw new ForbiddenExecption("You must be in the same institution");
         }
 

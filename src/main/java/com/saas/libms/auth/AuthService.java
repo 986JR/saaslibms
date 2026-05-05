@@ -130,8 +130,8 @@ public class AuthService {
         setRefreshCookie(httpServletResponse, refreshToken, 36000);
 
         UserSummaryDto userSummaryDto = new UserSummaryDto(
-                userDetails.getUserId(),
-                userDetails.getUsername(),
+                userDetails.getPublicId(),
+                userDetails.getName(),
                 userDetails.getEmail(),
                 userDetails.getRole(),
                 userDetails.getUser().getInstitution().getPublicId()
