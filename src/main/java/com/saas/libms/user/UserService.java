@@ -123,19 +123,16 @@ User saved = userRepository.save(target);
         User currentUserEntity = currentUser.getUser();
 
         if(currentUserEntity.getRole() != UserRole.ADMIN) {
-            System.out.println("here 1");
             throw new ForbiddenExecption("Only Admins Can Delete Users");
         }
 
         //should not delete self
         if (currentUserEntity.getPublicId().equals(targetPublicId)) {
-            System.out.println("here 2");
             throw new ForbiddenExecption("You can not Delete Your own Account");
         }
 
         //Must be in same institution
         if(!userRepository.existsByPublicIdAndInstitutionId(targetPublicId,currentUserEntity.getInstitution().getId())){
-            System.out.println("here 3");
             throw new ForbiddenExecption("You must be in the same institution");
         }
 
