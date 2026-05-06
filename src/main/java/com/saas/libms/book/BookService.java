@@ -44,6 +44,7 @@ public class BookService {
                 .title(dto.title())
                 .isbn(dto.isbn())
                 .publisher(dto.publisher())
+                .publishedYear(dto.publishedYear())
                 .copiesTotal(dto.copiesTotal())
                 .copiesAvailable(dto.copiesTotal())
                 .build();

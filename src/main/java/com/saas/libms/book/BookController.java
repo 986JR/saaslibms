@@ -7,7 +7,6 @@ import com.saas.libms.common.ApiResponse;
 import com.saas.libms.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,19 +21,19 @@ public class BookController {
     private final BookService bookService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN,LBRARIAN')")
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     public ResponseEntity<ApiResponse<BookResponseDTO>> createBook(
             @Valid @RequestBody BookCreateDTO dto,
-            @AuthenticationPrincipal CustomUserDetails curretUser
+            @AuthenticationPrincipal CustomUserDetails currentUser
             ) {
-        BookResponseDTO responseDTO = bookService.createBook(dto,curretUser);
+        BookResponseDTO responseDTO = bookService.createBook(dto,currentUser);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Book added successfully", responseDTO));
 
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN,LIBRARIAN')")
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     public ResponseEntity<ApiResponse<Page<BookResponseDTO>>> getAllBooks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -46,7 +45,7 @@ public class BookController {
     }
 
     @GetMapping("/{publicId}")
-    @PreAuthorize("hasAnyRole('ADMIN', LIBRARIAN)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ResponseEntity<ApiResponse<BookResponseDTO>> getBook(
             @PathVariable String publicId,
             @AuthenticationPrincipal CustomUserDetails currentUser
@@ -57,7 +56,7 @@ public class BookController {
     }
 
     @PatchMapping("/{publicId}")
-    @PreAuthorize("hasAnyRole('ADMIN,LIBRARIAN')")
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     public ResponseEntity<ApiResponse<BookResponseDTO>> updateBook(
             @PathVariable String publicId,
             @Valid @RequestBody BookUpdateDTO dto,
@@ -68,7 +67,7 @@ public class BookController {
     }
 
     @DeleteMapping("/{publicId}")
-    @PreAuthorize("hasAnyRole('ADMIN,LIBRARIAN)")
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     public ResponseEntity<ApiResponse<Void>> deleteBook(
             @PathVariable String publicId,
             @AuthenticationPrincipal CustomUserDetails currentUser
