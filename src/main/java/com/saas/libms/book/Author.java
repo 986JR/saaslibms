@@ -21,11 +21,18 @@ public class Author {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(name = "public_id", unique = true, nullable = false)
+    private String publicId;
+
     @Column(nullable = false)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "institution_id")
     private Institution institution;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "author_status")
+    private AuthorStatus status = AuthorStatus.ACTIVE;
 
 }
