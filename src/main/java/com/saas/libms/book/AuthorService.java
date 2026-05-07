@@ -34,6 +34,7 @@ public class AuthorService {
                 .publicId(PublicIdGenerator.generate("AUTHOR"))
                 .name(dto.name())
                 .status(AuthorStatus.ACTIVE)
+                .institution(institution)
                 .build();
 
         return AuthorResponseDTO.from(authorRepository.save(author));

@@ -35,7 +35,7 @@ public class AuthorController {
 
     //get All
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN',LIBRARIAN')")
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     public ResponseEntity<ApiResponse<Page<AuthorResponseDTO>>> getAllAuthors(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -57,7 +57,7 @@ public class AuthorController {
     }
 
     @PatchMapping("/{publicId}")
-    @PreAuthorize("hasAnyRole('ADMIN',LIBRARIAN')")
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     public ResponseEntity<ApiResponse<AuthorResponseDTO>> updateAuthor(
             @PathVariable String publicId,
             @RequestBody AuthorUpdateDTO dto,
@@ -68,7 +68,7 @@ public class AuthorController {
     }
 
     @DeleteMapping("/{publicId}")
-    @PreAuthorize("hasAnyRole('ADMIN',LIBRARIAN')")
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     public ResponseEntity<ApiResponse<Void>> deleteAuthor(
             @PathVariable String publicId,
             @AuthenticationPrincipal CustomUserDetails currentUser
