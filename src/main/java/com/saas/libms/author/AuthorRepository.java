@@ -1,4 +1,4 @@
-package com.saas.libms.book;
+package com.saas.libms.author;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

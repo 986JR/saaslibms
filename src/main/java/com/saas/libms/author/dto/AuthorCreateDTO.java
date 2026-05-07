@@ -1,4 +1,4 @@
-package com.saas.libms.book.dto;
+package com.saas.libms.author.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

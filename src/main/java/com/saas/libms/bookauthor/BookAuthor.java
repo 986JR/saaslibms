@@ -1,5 +1,7 @@
-package com.saas.libms.book;
+package com.saas.libms.bookauthor;
 
+import com.saas.libms.author.Author;
+import com.saas.libms.book.Book;
 import jakarta.persistence.*;
 import lombok.*;
 

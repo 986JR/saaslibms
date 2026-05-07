@@ -1,8 +1,8 @@
-package com.saas.libms.book;
+package com.saas.libms.author;
 
-import com.saas.libms.book.dto.AuthorCreateDTO;
-import com.saas.libms.book.dto.AuthorResponseDTO;
-import com.saas.libms.book.dto.AuthorUpdateDTO;
+import com.saas.libms.author.dto.AuthorCreateDTO;
+import com.saas.libms.author.dto.AuthorResponseDTO;
+import com.saas.libms.author.dto.AuthorUpdateDTO;
 import com.saas.libms.common.PublicIdGenerator;
 import com.saas.libms.exception.ConflictException;
 import com.saas.libms.exception.ResourceNotFoundException;

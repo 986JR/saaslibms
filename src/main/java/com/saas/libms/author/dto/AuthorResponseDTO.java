@@ -1,6 +1,6 @@
-package com.saas.libms.book.dto;
+package com.saas.libms.author.dto;
 
-import com.saas.libms.book.Author;
+import com.saas.libms.author.Author;
 
 public record AuthorResponseDTO(
         String publicId,

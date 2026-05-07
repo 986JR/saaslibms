@@ -1,4 +1,4 @@
-package com.saas.libms.book;
+package com.saas.libms.author;
 
 import com.saas.libms.institution.Institution;
 import jakarta.persistence.*;
