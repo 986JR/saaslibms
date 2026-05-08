@@ -3,6 +3,8 @@ package com.saas.libms.book;
 import com.saas.libms.book.dto.BookCreateDTO;
 import com.saas.libms.book.dto.BookResponseDTO;
 import com.saas.libms.book.dto.BookUpdateDTO;
+import com.saas.libms.category.Category;
+import com.saas.libms.category.CategoryRepository;
 import com.saas.libms.common.PublicIdGenerator;
 import com.saas.libms.exception.ConflictException;
 import com.saas.libms.exception.ResourceNotFoundException;
@@ -22,6 +24,7 @@ import java.util.UUID;
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final CategoryRepository categoryRepository;
    // private final PublicIdGenerator publicIdGenerator;
 
     //Create Book
@@ -38,6 +41,8 @@ public class BookService {
 
         String publicId = PublicIdGenerator.generate("BOOK");
 
+
+        Category category = findCategoryOrThrow(dto.categoryName());
         Book book = Book.builder()
                 .publicId(publicId)
                 .institution(currentUser.getUser().getInstitution())
@@ -47,6 +52,7 @@ public class BookService {
                 .publishedYear(dto.publishedYear())
                 .copiesTotal(dto.copiesTotal())
                 .copiesAvailable(dto.copiesTotal())
+                .category(category)
                 .build();
 
         return BookResponseDTO.from(bookRepository.save(book));
@@ -73,6 +79,7 @@ public class BookService {
     public BookResponseDTO updateBook(String publicId, BookUpdateDTO dto, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
         Book book = findBookOrThrow(publicId, institutionId);
+        Category category = findCategoryOrThrow(dto.categoryPublicId());
 
         if (dto.isbn() != null && !dto.isbn().isBlank()
         && !dto.isbn().equals(book.getIsbn())
@@ -95,6 +102,10 @@ public class BookService {
         if (dto.publishedYear() != null) {
             book.setPublishedYear(dto.publishedYear());
         }
+
+        if(dto.categoryPublicId() != null) {
+            book.setCategory(category);
+        }
         if(dto.copiesTotal() != null) {
             int diff = dto.copiesTotal() - book.getCopiesTotal();
             book.setCopiesAvailable(Math.max(0,book.getCopiesAvailable() + diff));
@@ -115,6 +126,11 @@ public class BookService {
     private Book findBookOrThrow(String publicId, UUID institutionId) {
         return bookRepository.findByPublicIdAndInstitutionId(publicId, institutionId)
                 .orElseThrow(()-> new ResourceNotFoundException("Book not Found"));
+    }
+
+    private Category findCategoryOrThrow(String categoryPublicId) {
+        return categoryRepository.findByPublicId(categoryPublicId)
+                .orElseThrow(()-> new ResourceNotFoundException("Category Does Not Exist"));
     }
 
 }

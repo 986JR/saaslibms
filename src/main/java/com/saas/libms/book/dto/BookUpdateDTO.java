@@ -8,6 +8,7 @@ public record BookUpdateDTO(
         String publisher,
         Integer publishedYear,
         @Min(value = 1, message = "Total copies must be at least 1")
-        Integer copiesTotal
+        Integer copiesTotal,
+        String categoryPublicId
 ) {
 }

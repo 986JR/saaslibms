@@ -1,5 +1,6 @@
 package com.saas.libms.book;
 
+import com.saas.libms.category.Category;
 import com.saas.libms.institution.Institution;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,6 +31,10 @@ public class Book {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "institution_id", nullable = false)
     private Institution institution;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     @Column(nullable = false)
     private String title;

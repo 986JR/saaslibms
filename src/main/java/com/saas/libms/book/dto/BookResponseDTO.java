@@ -13,10 +13,16 @@ public record BookResponseDTO(
         int copiesTotal,
         int copiesAvailable,
         String institutionId,
+        String categoryName,
         LocalDateTime createdAt
     ) {
 
     public static BookResponseDTO from(Book book) {
+        String categoryName = null;
+
+        if (book.getCategory() != null) {
+            categoryName = book.getCategory().getName();
+        }
         return new BookResponseDTO(
                 book.getPublicId(),
                 book.getTitle(),
@@ -26,6 +32,7 @@ public record BookResponseDTO(
                 book.getCopiesTotal(),
                 book.getCopiesAvailable(),
                 book.getInstitution().getPublicId(),
+                categoryName,
                 book.getCreatedAt()
         );
     }

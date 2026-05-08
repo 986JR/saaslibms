@@ -16,7 +16,9 @@ public record BookCreateDTO(
 
         @NotNull(message = "Total copies is required")
         @Min(value = 1, message = "Total copies must be aat least 1")
-        Integer copiesTotal
+        Integer copiesTotal,
+
+        String categoryName
 
 
 ) {

@@ -1,4 +1,4 @@
-package com.saas.libms.book;
+package com.saas.libms.category;
 
 import com.saas.libms.institution.Institution;
 import jakarta.persistence.*;
@@ -26,5 +26,8 @@ public class Category {
 
     @Column(nullable = false)
     private String name;
+
+    @Column(name = "public_id",nullable = false, unique = true)
+    private String publicId;
 
 }
