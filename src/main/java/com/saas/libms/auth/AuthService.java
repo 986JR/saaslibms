@@ -81,25 +81,25 @@ public class AuthService {
         //Load user
         CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(request.email());
 
-//        //Check PAssword
-//        if(!passwordEncoder.matches(request.password(), userDetails.getPassword()) {
-//            throw new UnauthorizedException("Invalid email or password");
-//        }
-//
-//        //Check active user and institution
-//        if(userDetails.getStatus() != UserStatus.ACTIVE) {
-//            throw new UnauthorizedException("Your Account is disabled");
-//        }
-//
-//        if(userDetails.getInstitutionStatus() != InstitutionStatus.ACTIVE) {
-//            throw new UnauthorizedException("Your Instituion account is not active");
-//        }
+//        //Check Password
+        if(!passwordEncoder.matches(request.password(), userDetails.getPassword())) {
+            throw new UnauthorizedException("Invalid email or password");
+        }
+
+        //Check active user and institution
+        if(userDetails.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Your Account is disabled");
+        }
+
+        if(userDetails.getInstitutionStatus() != InstitutionStatus.ACTIVE) {
+            throw new UnauthorizedException("Your Instituion account is not active");
+        }
 
         //using Authentication
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.email(), request.password())
-        );
+//        Authentication authentication = authenticationManager.authenticate(
+//                new UsernamePasswordAuthenticationToken(
+//                        request.email(), request.password())
+//        );
 
         //Only single Session
         refreshSessionRepository.deleteByUserId(userDetails.getUserId());
@@ -171,7 +171,8 @@ public class AuthService {
                 userDetails.getUsername());
 
         //Generate new refresh token and save
-        String newRefreshTokenHash = TokenHashUtil.hash(UUID.randomUUID().toString());
+        String newRefreshToken=UUID.randomUUID().toString();
+        String newRefreshTokenHash = TokenHashUtil.hash(newRefreshToken);
         RefreshSession newSession = RefreshSession.builder()
                 .user(userDetails.getUser())
                 .expiresAt(LocalDateTime.now().plusHours(10))
@@ -182,7 +183,7 @@ public class AuthService {
                 .build();
         refreshSessionRepository.save(newSession);
 //set new Cookie
-        setRefreshCookie(httpServletResponse, newRefreshTokenHash, 36000);
+        setRefreshCookie(httpServletResponse, newRefreshToken, 36000);
 
     return newAccessToken;
 

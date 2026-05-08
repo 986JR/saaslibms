@@ -73,7 +73,7 @@ public class BookAuthorController {
         return ResponseEntity.ok(
                 ApiResponse.success("Book-author link updated successfully", result));
     }
-    
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ResponseEntity<ApiResponse<Void>> delete(
