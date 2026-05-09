@@ -6,6 +6,7 @@ import com.saas.libms.exception.ResourceNotFoundException;
 import com.saas.libms.member.dto.MemberCreateDTO;
 import com.saas.libms.member.dto.MemberResponseDTO;
 import com.saas.libms.member.dto.MemberStatusUpdateDTO;
+import com.saas.libms.member.dto.MemberUpdateDTO;
 import com.saas.libms.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -42,6 +44,7 @@ public class MemberService {
                 .email(dto.email())
                 .phone(dto.phone())
                 .status(MemberStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         Member saved = memberRepository.save(member);
@@ -71,7 +74,7 @@ public class MemberService {
 
     //Update
     @Transactional
-    public MemberResponseDTO updateMember(String publicId, MemberCreateDTO dto, CustomUserDetails currentUser) {
+    public MemberResponseDTO updateMember(String publicId, MemberUpdateDTO dto, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
 
         Member member = memberRepository

@@ -4,8 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record MemberCreateDTO(
-        @NotBlank(message = "Full Name is required")
+public record MemberUpdateDTO(
+
         @Size(max = 255, message = "Full name must not exceed 255 characters")
         String fullName,
 
@@ -15,8 +15,5 @@ public record MemberCreateDTO(
 
         @Size(min = 10, message = "Phone must not exceed 10 characters")
         String phone
-
-//        @Size(max = 255, message = "Address must not exceed 255 characters")
-//        String address
 ) {
 }

@@ -4,6 +4,7 @@ import com.saas.libms.common.ApiResponse;
 import com.saas.libms.member.dto.MemberCreateDTO;
 import com.saas.libms.member.dto.MemberResponseDTO;
 import com.saas.libms.member.dto.MemberStatusUpdateDTO;
+import com.saas.libms.member.dto.MemberUpdateDTO;
 import com.saas.libms.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -65,7 +66,7 @@ public class MemberController {
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ResponseEntity<ApiResponse<MemberResponseDTO>> updateMember(
             @PathVariable String publicId,
-            @Valid @RequestBody MemberCreateDTO dto,
+            @Valid @RequestBody MemberUpdateDTO dto,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         MemberResponseDTO responseDTO = memberService.updateMember(publicId,dto,currentUser);
@@ -83,10 +84,7 @@ public class MemberController {
         return ResponseEntity.ok(ApiResponse.success("Member status updated successfully", response));
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // DELETE /api/v1/members/{publicId}
-    // Soft delete — marks member as BLOCKED, never removes the row — ADMIN only
-    // ─────────────────────────────────────────────────────────────────
+
     @DeleteMapping("/{publicId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteMember(

@@ -34,6 +34,7 @@ public class Member {
 
     private String email;
 
+    @Column(unique = true)
     private String phone;
 
     @Enumerated(EnumType.STRING)
