@@ -11,7 +11,11 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name="loans")
+@Table(name="loans",
+        indexes = {
+                @Index(name = "idx_loan_public_id", columnList = "public_id"),
+                @Index(name = "idx_loan_status", columnList = "status")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -51,5 +55,14 @@ public class Loan {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private LoanStatus status = LoanStatus.BORROWED;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean archived = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int quantity=1;
+
 
 }
