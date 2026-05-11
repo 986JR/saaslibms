@@ -75,4 +75,7 @@ public class Reservation {
     @Builder.Default
     private boolean archived = false;
 
+    @Column(name = "reservedUntil")
+    private LocalDateTime reservedUntil;
+
 }
