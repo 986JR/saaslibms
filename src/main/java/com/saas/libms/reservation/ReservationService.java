@@ -32,7 +32,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ReservationService {
-    private static final int RESERVATION_LIMIT = 0;
+    private static final int RESERVATION_LIMIT = 3;
 
     private final ReservationRepository reservationRepository;
     private final MemberRepository memberRepository;

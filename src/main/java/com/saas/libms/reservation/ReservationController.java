@@ -7,7 +7,6 @@ import com.saas.libms.reservation.dto.ReservationResponseDTO;
 import com.saas.libms.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +31,7 @@ public class ReservationController {
             ) {
         ReservationResponseDTO responseDTO = reservationService.createReservation(dto,currentUSer);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("REservation created successfully. Member placed at queue position " +
+                .body(ApiResponse.success("Reservation created successfully. Member placed at queue position " +
                         " "+ responseDTO.queuePosition() +".", responseDTO));
     }
 
@@ -63,7 +62,7 @@ public class ReservationController {
         return ResponseEntity.ok(ApiResponse.success("Reservations fetched successfully.", result));
     }
 
-    // ─── GET /api/v1/reservations/{publicId} ─────────────────────────────────
+    //  GET /api/v1/reservations/{publicId}
     // Get a single reservation by public ID
 
     @GetMapping("/{publicId}")
