@@ -2,6 +2,7 @@ package com.saas.libms.loan;
 
 import com.saas.libms.book.Book;
 import com.saas.libms.book.BookRepository;
+import com.saas.libms.common.EmailService;
 import com.saas.libms.common.PublicIdGenerator;
 import com.saas.libms.exception.BadRequestException;
 import com.saas.libms.exception.ResourceNotFoundException;
@@ -36,6 +37,8 @@ public class LoanService {
     private final BookRepository bookRepository;
     private final MemberRepository memberRepository;
     private final ReservationRepository reservationRepository;
+
+    private final EmailService emailService;
 
     //Standard loan overdue days
     private static final int LOAN_PERIOD_DAYS = 14;
@@ -160,6 +163,8 @@ public class LoanService {
             reservationToClose.setArchived(true);
             reservationToClose.setUpdatedAt(LocalDateTime.now());
             reservationRepository.save(reservationToClose);
+
+            emailService.sendReservationCollectedEmail(member.getEmail(), member.getName(), book.getTitle(), reservationToClose.getPublicId(), loan.getPublicId());
 
             log.info("Reservation '{}' closed as COLLECTED — linked to loan '{}'.",
                     reservationToClose.getPublicId(), loan.getPublicId());
