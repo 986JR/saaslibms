@@ -11,8 +11,12 @@ import com.saas.libms.loan.dto.LoanReturnDTO;
 import com.saas.libms.member.Member;
 import com.saas.libms.member.MemberRepository;
 import com.saas.libms.member.MemberStatus;
+import com.saas.libms.reservation.Reservation;
+import com.saas.libms.reservation.ReservationRepository;
+import com.saas.libms.reservation.ReservationStatus;
 import com.saas.libms.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,12 +28,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LoanService {
     private final LoanRepository loanRepository;
     private final BookRepository bookRepository;
     private final MemberRepository memberRepository;
+    private final ReservationRepository reservationRepository;
 
     //Standard loan overdue days
     private static final int LOAN_PERIOD_DAYS = 14;
@@ -84,17 +90,55 @@ public class LoanService {
             );
         }
 
-        //Check Book Availability
-        if(book.getCopiesAvailable() < quantity) {
-            throw new BadRequestException(
-                    "not enough copies available. Requested: "+ quantity + ", " +
-                            "Available: " + book.getCopiesAvailable() + "."
-            );
+        boolean memberHasActiveReservation = reservationRepository.hasPendingOrFulfilledReservation(member.getId(), book.getId());
+
+        //Track whether we are fulfilling a reservation so we can skip the
+        // copiesAvailable check (the scheduler already decremented it) and
+        // close the reservation record after the loan is saved.
+        boolean isFulfillingReservation = false;
+        Reservation reservationToClose = null;
+
+        if(memberHasActiveReservation) {
+            Reservation activeReservation = reservationRepository.findActiveReservationForMemberAndBook(member.getId(), book.getId())
+                    .orElseThrow(()-> new ResourceNotFoundException("Reservation record not found. This is an unexpected state please retry"));
+            if (activeReservation.getStatus() == ReservationStatus.FULFILLED) {
+                log.info("Loan creation: member '{}' is collectiing their FULFILLED  reservation '{}' for book '{}'.", member.getPublicId(),activeReservation.getPublicId(), book.getTitle());
+                isFulfillingReservation=true;
+                reservationToClose =activeReservation;
+            }
+            else {
+                throw new BadRequestException(
+                        "Member "+ member.getName() + " already has a PENDING reservation " +
+                                "(Queue Position " + activeReservation.getQueuePosition() + ") " +
+                                "for this book (reservation: " + activeReservation.getPublicId() + "). " +
+                                "They must wait for the system to fulfill their reservation before a loan can be issued."
+                );
+            }
+        } else {
+            long pendingReservationCount = reservationRepository.countPendingReservationsForBook(book.getId());
+            if (pendingReservationCount > 0) {
+                throw new BadRequestException(
+                        "This book has " + pendingReservationCount +
+                                "member(s) waiting in the reservation queue. " +
+                                "The available copy(s) is reserved for the next member in line. " +
+                                "Please ask this member to make a reservation, or wait until " +
+                                "the reservation queue is cleared."
+                );
+            }
+
+            if(book.getCopiesAvailable() < quantity) {
+                throw new BadRequestException(
+                        "not enough copies available. Requested: " + quantity + ", " +
+                                "Available: " + book.getCopiesAvailable() + "."
+                );
+            }
         }
 
-        //Reduce available copies
-        book.setCopiesAvailable(book.getCopiesAvailable()- quantity);
-        bookRepository.save(book);
+        //issue the loan
+        if (!isFulfillingReservation) {
+            book.setCopiesAvailable(book.getCopiesAvailable()-quantity);
+            bookRepository.save(book);
+        }
 
         Loan loan = Loan.builder()
                 .publicId(PublicIdGenerator.generate("LOAN"))
@@ -102,14 +146,27 @@ public class LoanService {
                 .book(book)
                 .member(member)
                 .borrowDate(LocalDateTime.now())
-                .dueDate(LocalDate.now())
+                .dueDate(LocalDate.now().plusWeeks(2)) // standard 2-week due date
                 .status(LoanStatus.BORROWED)
                 .quantity(quantity)
                 .archived(false)
                 .build();
 
         loanRepository.save(loan);
-        return  LoanResponseDTO.from(loan);
+
+        if (isFulfillingReservation && reservationToClose != null) {
+            reservationToClose.setStatus(ReservationStatus.CANCELLED);
+            reservationToClose.setCancelReason("Collected — loan issued (" + loan.getPublicId() + ")");
+            reservationToClose.setArchived(true);
+            reservationToClose.setUpdatedAt(LocalDateTime.now());
+            reservationRepository.save(reservationToClose);
+
+            log.info("Reservation '{}' closed as COLLECTED — linked to loan '{}'.",
+                    reservationToClose.getPublicId(), loan.getPublicId());
+        }
+
+        return LoanResponseDTO.from(loan);
+
 
     }
 

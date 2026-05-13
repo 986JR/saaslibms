@@ -13,7 +13,7 @@ import java.util.List;
 
 public interface ReservationRepository extends JpaRepository<Reservation, UUID> {
 
-    // ─── Single Reservation Lookup
+    // Single Reservation Lookup
 
     @Query("""
             SELECT r FROM Reservation r
@@ -29,7 +29,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
             @Param("institutionId") UUID institutionId
     );
 
-    // ─── Paginated List with Optional Filters
+    // Paginated List with Optional Filters
 
     @Query("""
             SELECT r FROM Reservation r
@@ -152,6 +152,22 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
             """)
     int countActiveReservationsByMember(@Param("memberId") UUID memberId);
 
+//for phase 15
+@Query("""
+            SELECT r FROM Reservation r
+            JOIN FETCH r.book
+            JOIN FETCH r.member
+            WHERE r.member.id = :memberId
+              AND r.book.id   = :bookId
+              AND r.status IN (
+                  com.saas.libms.reservation.ReservationStatus.PENDING,
+                  com.saas.libms.reservation.ReservationStatus.FULFILLED
+              )
+            """)
+Optional<Reservation> findActiveReservationForMemberAndBook(
+        @Param("memberId") UUID memberId,
+        @Param("bookId") UUID bookId
+);
 
 
 

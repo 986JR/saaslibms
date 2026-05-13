@@ -40,7 +40,7 @@ public class ReservationScheduler {
     // Member has 48 hours to collect once fulfilled
     private static final int COLLECTION_WINDOW_HOURS = 48;
 
-    // ─── FULFILLMENT SCHEDULER ───────────────────────────────────────────────
+    //  FULFILLMENT SCHEDULER
     // Runs every 5 minutes. Checks if any books with pending reservations now
     // have available copies, and if so, fulfills the next member in queue.
 
@@ -113,7 +113,7 @@ public class ReservationScheduler {
         }
     }
 
-    // ─── EXPIRY SCHEDULER ────────────────────────────────────────────────────
+    // EXPIRY SCHEDULER
     // Runs every hour. Finds FULFILLED reservations where the member did not
     // collect within the 48-hour window, marks them EXPIRED, and restores
     // the copy back to the book so the next member in queue can get it.

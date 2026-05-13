@@ -295,5 +295,71 @@ public class EmailService {
             """.formatted(memberName, bookTitle, reservationId, reason);
     }
 
+    @Async
+    public void sendReservationCollectedEmail(
+            String toEmail,
+            String memberName,
+            String bookTitle,
+            String reservationPublicId,
+            String loanPublicId
+    ) {
+        String subject = "✅ Reserved Book Collected — Loan Active";
+
+        String htmlBody = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8"/>
+              <style>
+                body        { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+                .container  { max-width: 600px; margin: 30px auto; background: #fff;
+                               border-radius: 10px; overflow: hidden;
+                               box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+                .header     { background: linear-gradient(135deg, #16a34a, #15803d);
+                               padding: 30px 20px; text-align: center; }
+                .header h1  { color: #fff; margin: 0; font-size: 22px; }
+                .body       { padding: 30px 25px; color: #333; }
+                .card       { background: #f0fdf4; border-left: 4px solid #16a34a;
+                               border-radius: 6px; padding: 16px 20px; margin: 20px 0; }
+                .card p     { margin: 6px 0; font-size: 15px; }
+                .label      { font-weight: bold; color: #15803d; }
+                .footer     { background: #f9f9f9; text-align: center; padding: 16px;
+                               font-size: 12px; color: #999; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>✅ Book Collected Successfully</h1>
+                </div>
+                <div class="body">
+                  <p>Dear <strong>%s</strong>,</p>
+                  <p>
+                    Your reserved book has been collected and your loan is now active.
+                    Please return the book by the due date shown at the library counter.
+                  </p>
+                  <div class="card">
+                    <p><span class="label">Book:</span> %s</p>
+                    <p><span class="label">Reservation:</span> %s</p>
+                    <p><span class="label">Loan ID:</span> %s</p>
+                  </div>
+                  <p>
+                    If you did not collect this book or believe this is an error,
+                    please contact the library immediately.
+                  </p>
+                </div>
+                <div class="footer">
+                  This is an automated message from the Library Management System.
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(memberName, bookTitle, reservationPublicId, loanPublicId);
+
+        sendHtmlEmail(toEmail, subject, htmlBody);
+        log.info("Reservation-collected email sent to '{}' for book '{}'.", toEmail, bookTitle);
+    }
+
+
 
 }
