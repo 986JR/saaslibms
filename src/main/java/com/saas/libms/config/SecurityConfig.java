@@ -6,6 +6,7 @@ import com.saas.libms.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -52,6 +53,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // --- Public endpoints (no token needed) ---
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/institution/register",
                                 "/api/v1/auth/institution/verify",
@@ -101,15 +103,27 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000",
+                "http://localhost:5173",   // Vite
+                "http://localhost:3000",   // Create React App
+                "http://localhost:3001",   // CRA alternate port
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:3000",
                 "http://127.0.0.1:5500"
         ));
+
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "X-Requested-With"
+        ));
+
+        config.setExposedHeaders(List.of("Authorization")); // so frontend can read it
 
         config.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
-        config.setAllowedHeaders(List.of("*"));
+
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
