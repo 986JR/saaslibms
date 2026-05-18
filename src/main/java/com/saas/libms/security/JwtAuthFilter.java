@@ -1,7 +1,6 @@
 package com.saas.libms.security;
 
 import com.saas.libms.auth.blacklist.BlacklistedTokenRepository;
-import com.saas.libms.exception.TokenException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,18 +16,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * Runs once on every HTTP request before it hits a controller.
- *
- * What it does:
- *  1. Reads the JWT from the "Authorization: Bearer <token>" header
- *  2. Validates the signature and expiry
- *  3. Checks the token is NOT in the blacklist (wasn't logged out)
- *  4. Loads the user and puts them in the SecurityContext
- *
- * If anything fails, the request continues as anonymous —
- * Spring Security then rejects it for protected endpoints.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -51,86 +38,103 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = extractTokenFromHeader(request);
 
-        // No token = anonymous request — let Spring Security handle it downstream
+        // 1. No token → anonymous request
         if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Step 1 — Is the JWT itself valid (signature + expiry)?
+        // 2. Invalid token → 401
         if (!jwtUtil.isValid(token)) {
-            filterChain.doFilter(request, response);
+            writeUnauthorized(response, "Invalid or expired token");
             return;
         }
 
-        // Step 2 — Was this token blacklisted (user logged out but token hasn't expired yet)?
+        // 3. Blacklisted token → 401
         String tokenHash = TokenHashUtil.hash(token);
         if (blacklistedTokenRepository.existsByTokenHash(tokenHash)) {
-            log.warn("Rejected blacklisted token for request: {}", request.getRequestURI());
-            filterChain.doFilter(request, response);
+            writeUnauthorized(response, "Token has been revoked");
             return;
         }
 
-        // Step 3 — Load the user and authenticate them in the SecurityContext
-        String email = jwtUtil.extractUserId(token).toString();
+        // 4. Authenticate user (Step 3 + Step 4 clean handling)
+        try {
 
-        // Only set authentication if not already set (prevents processing twice)
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            authenticateUser(token, request);
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                authenticateUser(token, request);
+            }
+
+        } catch (Exception ex) {
+
+            log.error("JWT authentication failed: {}", ex.getMessage());
+            SecurityContextHolder.clearContext();
+
+            writeUnauthorized(response, "Authentication failed");
+            return;
         }
 
+        // 5. Continue filter chain
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * STEP 3 CORE LOGIC (clean + safe)
+     */
     private void authenticateUser(String token, HttpServletRequest request) {
-        try {
-            // We stored userId as the subject — look up by userId via a custom method
-            // For simplicity here we load by the email extracted from claims
-            // In your UserRepository, you'll add findById too
-            String email = extractEmailFromToken(token);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,                          // credentials — null after login
-                            userDetails.getAuthorities()
-                    );
+        String email = extractEmailFromToken(token);
 
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-            );
+        UserDetails userDetails =
+                userDetailsService.loadUserByUsername(email);
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
 
-        } catch (TokenException ex) {
-            log.error("Failed to authenticate user from JWT: {}", ex.getMessage());
-            SecurityContextHolder.clearContext();
-        }
+        authentication.setDetails(
+                new WebAuthenticationDetailsSource().buildDetails(request)
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
     /**
-     * Reads the Bearer token from the Authorization header.
-     * Returns null if the header is missing or not a Bearer token.
+     * Clean reusable 401 response helper (STEP 4 style)
+     */
+    private void writeUnauthorized(HttpServletResponse response, String message)
+            throws IOException {
+
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+
+        response.getWriter().write("""
+        {
+            "status": 401,
+            "error": "%s"
+        }
+        """.formatted(message));
+    }
+
+    /**
+     * Extract Bearer token
      */
     private String extractTokenFromHeader(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
+
         if (header != null && header.startsWith("Bearer ")) {
-            return header.substring(7); // strip "Bearer " prefix
+            return header.substring(7);
         }
+
         return null;
     }
 
     /**
-     * We stored userId as the JWT subject, but to load UserDetails
-     * we need email. We add an email claim to the token in JwtUtil.
-     *
-     * NOTE: Update JwtUtil.generateAccessToken() to also embed email
-     * as a claim, then extract it here.
+     * Extract email from JWT claims
      */
     private String extractEmailFromToken(String token) {
-        // This will work once you add "email" as a claim in JwtUtil.generateAccessToken()
-        // For now, this delegates to a method we'll wire up in Phase 5 (AuthService/JwtUtil update)
         return jwtUtil.extractEmail(token);
     }
 }
