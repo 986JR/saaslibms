@@ -18,6 +18,7 @@ public record BookCreateDTO(
         @Min(value = 1, message = "Total copies must be aat least 1")
         Integer copiesTotal,
 
+
         String categoryName
 
 

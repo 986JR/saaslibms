@@ -42,7 +42,7 @@ public class BookService {
         String publicId = PublicIdGenerator.generate("BOOK");
 
 
-        Category category = findCategoryOrThrow(dto.categoryName());
+        Category category = findCategoryByNameOrThrow(dto.categoryName());
         Book book = Book.builder()
                 .publicId(publicId)
                 .institution(currentUser.getUser().getInstitution())
@@ -79,7 +79,7 @@ public class BookService {
     public BookResponseDTO updateBook(String publicId, BookUpdateDTO dto, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
         Book book = findBookOrThrow(publicId, institutionId);
-        Category category = findCategoryOrThrow(dto.categoryPublicId());
+        Category category = findCategoryByNameOrThrow(dto.categoryName());
 
         if (dto.isbn() != null && !dto.isbn().isBlank()
         && !dto.isbn().equals(book.getIsbn())
@@ -103,12 +103,12 @@ public class BookService {
             book.setPublishedYear(dto.publishedYear());
         }
 
-        if(dto.categoryPublicId() != null) {
+        if(dto.categoryName() != null) {
             book.setCategory(category);
         }
         if(dto.copiesTotal() != null) {
-            int diff = dto.copiesTotal() - book.getCopiesTotal();
-            book.setCopiesAvailable(Math.max(0,book.getCopiesAvailable() + diff));
+           // int diff = dto.copiesTotal() - book.getCopiesTotal();
+            book.setCopiesTotal(Math.max(0,dto.copiesTotal()));
 
         }
 
@@ -131,6 +131,11 @@ public class BookService {
     private Category findCategoryOrThrow(String categoryPublicId) {
         return categoryRepository.findByPublicId(categoryPublicId)
                 .orElseThrow(()-> new ResourceNotFoundException("Category Does Not Exist"));
+    }
+
+    private Category findCategoryByNameOrThrow(String categoryName) {
+        return categoryRepository.findByName(categoryName)
+                .orElseThrow(()-> new ResourceNotFoundException("Category Does Not Exist!"));
     }
 
 }
