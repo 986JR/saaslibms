@@ -200,6 +200,8 @@ public class LoanService {
             );
         }
 
+
+
         //Restore Copies to the book
         Book book = loan.getBook();
         int newAvailable = Math.min(book.getCopiesAvailable() + returnQty, book.getCopiesTotal());
@@ -211,9 +213,15 @@ public class LoanService {
         LocalDate today = LocalDate.now();
         LoanStatus newStatus = today.isAfter(loan.getDueDate()) ? LoanStatus.LATE : LoanStatus.RETURNED;
 
+        if(returnQty < loan.getQuantity()) {
+            newStatus = LoanStatus.BORROWED;
+
+        }
+
         //upadate loan fields
         loan.setReturnDate(today);
         loan.setStatus(newStatus);
+        loan.setQuantity(loan.getQuantity()-returnQty);
         loanRepository.save(loan);
 
         //Warn if books did not complete
