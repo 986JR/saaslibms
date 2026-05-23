@@ -4,9 +4,13 @@ import com.saas.libms.auth.blacklist.BlacklistedToken;
 import com.saas.libms.auth.blacklist.BlacklistedTokenRepository;
 import com.saas.libms.auth.dto.LoginRequest;
 import com.saas.libms.auth.dto.LoginResponse;
+import com.saas.libms.auth.dto.PasswordResetResponse;
 import com.saas.libms.auth.dto.UserSummaryDto;
 import com.saas.libms.auth.session.RefreshSession;
 import com.saas.libms.auth.session.RefreshSessionRepository;
+import com.saas.libms.common.EmailService;
+import com.saas.libms.common.PublicIdGenerator;
+import com.saas.libms.exception.BadRequestException;
 import com.saas.libms.exception.TokenException;
 import com.saas.libms.exception.UnauthorizedException;
 import com.saas.libms.institution.InstitutionStatus;
@@ -218,5 +222,15 @@ public class AuthService {
 
         setRefreshCookie(response, "", 0);
     }
+
+    //Password Resets
+    public PasswordResetResponse verifyEmailExists(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(()-> new BadRequestException("Email not Found, Try Again"));
+
+        String verificationCode = PublicIdGenerator.generateVerificationCode();
+        return PasswordResetResponse.of("Reset Link sent");
+    }
+
+
 
 }
