@@ -29,7 +29,7 @@ public class PasswordResetService {
     private final BCryptPasswordEncoder passwordEncoder;
     //private final PublicIdGenerator publicIdGenerator;
 
-    @Value("${app.base-url:http://localhost:8080}")
+    @Value("${app.base-url}")
     private String baseUl;
 
     @Value("${app.password-reset.expiry-minutes:5}")
@@ -59,7 +59,7 @@ public class PasswordResetService {
                 passwordResetTokenRepository.save(resetToken);
 
                 //build reset link
-                String resetLink = baseUl+"/api/v1/auth/reset-password?token=" + rawToken;
+                String resetLink = baseUl + "/reset-password?token=" + rawToken;
 
                 emailService.sendPasswordResetEmail(email, user.getUsername(),
                         resetLink, rawToken, tokenExpiryMinutes);
