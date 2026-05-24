@@ -361,5 +361,204 @@ public class EmailService {
     }
 
 
+    // ─────────────────────────────────────────────────────────────────────────────
+// ADD THIS METHOD to your existing EmailService.java in common/
+// Place it alongside the other send*Email methods.
+// ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Sends a styled HTML password reset email.
+     *
+     * @param toEmail          The user's email address
+     * @param username         The user's display name (shown in the greeting)
+     * @param resetLink        Full URL the user clicks to reset (contains raw token)
+     * @param rawToken         The 6-character token (shown separately in the email for copy-paste)
+     * @param expiryMinutes    How many minutes before the token expires (shown to the user)
+     */
+    @Async
+    public void sendPasswordResetEmail(String toEmail,
+                                       String username,
+                                       String resetLink,
+                                       String rawToken,
+                                       int expiryMinutes) {
+        String subject = "🔐 Reset Your Library System Password";
+
+        String html = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+          <title>Password Reset</title>
+        </head>
+        <body style="margin:0;padding:0;background-color:#0f1117;font-family:'Segoe UI',Roboto,Arial,sans-serif;">
+
+          <!-- Outer wrapper -->
+          <table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#0f1117;padding:40px 0;">
+            <tr>
+              <td align="center">
+
+                <!-- Email card -->
+                <table width="600" cellpadding="0" cellspacing="0"
+                       style="background-color:#1a1d27;border-radius:16px;overflow:hidden;
+                              box-shadow:0 8px 40px rgba(0,0,0,0.5);max-width:600px;width:100%%;">
+
+                  <!-- ── HERO HEADER ── -->
+                  <tr>
+                    <td style="background:linear-gradient(135deg,#6c3fff 0%%,#a855f7 50%%,#ec4899 100%%);
+                                padding:48px 40px 40px;text-align:center;">
+
+                      <!-- Lock icon circle -->
+                      <div style="width:72px;height:72px;background:rgba(255,255,255,0.15);
+                                  border-radius:50%%;margin:0 auto 20px;
+                                  display:flex;align-items:center;justify-content:center;
+                                  font-size:36px;line-height:72px;">
+                        🔐
+                      </div>
+
+                      <h1 style="margin:0 0 8px;color:#ffffff;font-size:26px;font-weight:700;
+                                 letter-spacing:-0.5px;">
+                        Password Reset Request
+                      </h1>
+                      <p style="margin:0;color:rgba(255,255,255,0.8);font-size:15px;">
+                        Library Management System
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- ── BODY ── -->
+                  <tr>
+                    <td style="padding:40px;">
+
+                      <!-- Greeting -->
+                      <p style="margin:0 0 8px;color:#a0a3b1;font-size:13px;
+                                 text-transform:uppercase;letter-spacing:1px;font-weight:600;">
+                        Hello,
+                      </p>
+                      <h2 style="margin:0 0 20px;color:#ffffff;font-size:22px;font-weight:600;">
+                        %s
+                      </h2>
+
+                      <p style="margin:0 0 28px;color:#c4c7d4;font-size:15px;line-height:1.7;">
+                        We received a request to reset the password for your Library Management System account.
+                        Click the button below to choose a new password. This link is valid for
+                        <strong style="color:#a855f7;">%d minutes</strong>.
+                      </p>
+
+                      <!-- ── CTA BUTTON ── -->
+                      <table width="100%%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="center" style="padding:0 0 32px;">
+                            <a href="%s"
+                               style="display:inline-block;background:linear-gradient(135deg,#6c3fff,#a855f7);
+                                      color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;
+                                      padding:16px 48px;border-radius:12px;letter-spacing:0.3px;
+                                      box-shadow:0 4px 20px rgba(108,63,255,0.5);">
+                              Reset My Password →
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- ── TOKEN CARD (copy-paste fallback) ── -->
+                      <table width="100%%" cellpadding="0" cellspacing="0"
+                             style="background-color:#0f1117;border:1px solid #2e3147;
+                                    border-radius:12px;margin-bottom:28px;">
+                        <tr>
+                          <td style="padding:24px;text-align:center;">
+                            <p style="margin:0 0 12px;color:#a0a3b1;font-size:12px;
+                                       text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">
+                              Or use this reset code
+                            </p>
+                            <p style="margin:0;color:#a855f7;font-size:32px;font-weight:800;
+                                       letter-spacing:8px;font-family:'Courier New',monospace;">
+                              %s
+                            </p>
+                            <p style="margin:10px 0 0;color:#6b6f85;font-size:12px;">
+                              Paste this code on the reset page if the button doesn't work
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- ── EXPIRY WARNING BANNER ── -->
+                      <table width="100%%" cellpadding="0" cellspacing="0"
+                             style="background-color:#2d1f0e;border:1px solid #7c4a1e;
+                                    border-radius:10px;margin-bottom:28px;">
+                        <tr>
+                          <td style="padding:16px 20px;">
+                            <p style="margin:0;color:#f59e0b;font-size:14px;">
+                              ⏱️  <strong>This link expires in %d minutes.</strong>
+                              If you don't reset your password before then,
+                              you'll need to request a new link.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- ── SECURITY NOTICE ── -->
+                      <table width="100%%" cellpadding="0" cellspacing="0"
+                             style="background-color:#0d1f1a;border:1px solid #1a4a36;
+                                    border-radius:10px;margin-bottom:32px;">
+                        <tr>
+                          <td style="padding:16px 20px;">
+                            <p style="margin:0;color:#4ade80;font-size:14px;">
+                              🛡️  <strong>Didn't request this?</strong>
+                              Your password will not change unless you click the link above.
+                              You can safely ignore this email.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- ── LINK FALLBACK ── -->
+                      <p style="margin:0 0 6px;color:#6b6f85;font-size:12px;">
+                        If the button isn't clickable, copy and paste this URL into your browser:
+                      </p>
+                      <p style="margin:0;word-break:break-all;">
+                        <a href="%s" style="color:#a855f7;font-size:12px;text-decoration:underline;">
+                          %s
+                        </a>
+                      </p>
+
+                    </td>
+                  </tr>
+
+                  <!-- ── FOOTER ── -->
+                  <tr>
+                    <td style="background-color:#13151f;padding:24px 40px;
+                                border-top:1px solid #2e3147;text-align:center;">
+                      <p style="margin:0 0 6px;color:#4b4f65;font-size:12px;">
+                        This email was sent by the Library Management System.
+                      </p>
+                      <p style="margin:0;color:#4b4f65;font-size:11px;">
+                        For security, this link can only be used once and expires in %d minutes.
+                      </p>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- /email card -->
+
+              </td>
+            </tr>
+          </table>
+
+        </body>
+        </html>
+        """.formatted(
+                username,          // greeting name
+                expiryMinutes,     // "valid for X minutes" in intro
+                resetLink,         // href on the button
+                rawToken,          // 6-char code in the token card
+                expiryMinutes,     // expiry warning banner
+                resetLink,         // href in the fallback link
+                resetLink,         // displayed text of fallback link
+                expiryMinutes      // footer expiry note
+        );
+
+        sendHtmlEmail(toEmail, subject, html);
+    }
+
 
 }
