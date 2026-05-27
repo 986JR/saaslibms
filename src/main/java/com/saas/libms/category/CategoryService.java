@@ -1,5 +1,9 @@
 package com.saas.libms.category;
 
+import com.saas.libms.audit.AuditAction;
+import com.saas.libms.audit.AuditEntityType;
+import com.saas.libms.audit.AuditLogService;
+import com.saas.libms.audit.AuditMetadata;
 import com.saas.libms.category.dto.CategoryCreateDTO;
 import com.saas.libms.category.dto.CategoryResponseDTO;
 import com.saas.libms.category.dto.CategoryUpdateDTO;
@@ -22,6 +26,7 @@ import java.util.UUID;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final AuditLogService auditLogService;
 
     //Create
     @Transactional
@@ -39,6 +44,16 @@ public class CategoryService {
                 .name(dto.name())
                 .publicId(publicId)
                 .build();
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.CATEGORY_CREATED,
+                AuditEntityType.CATEGORY,
+                category.getPublicId(),
+                AuditMetadata.builder()
+                        .put("name", category.getName())
+                        .build()
+        );
 
         return CategoryResponseDTO.from(categoryRepository.save(category));
     }
@@ -84,6 +99,16 @@ public class CategoryService {
     }
     category.setName(newName);
 
+        auditLogService.log(
+                currentUser,
+                AuditAction.CATEGORY_UPDATED,
+                AuditEntityType.CATEGORY,
+                category.getPublicId(),
+                AuditMetadata.builder()
+                        .put("name", category.getName())
+                        .build()
+        );
+
     return CategoryResponseDTO.from(categoryRepository.save(category));
     }
 
@@ -99,6 +124,16 @@ public class CategoryService {
         categoryRepository.detachBookBooksFromCategory(category.getId());
 
         categoryRepository.delete(category);
+
+        auditLogService.log(
+                currentUSer,
+                AuditAction.CATEGORY_DELETED,
+                AuditEntityType.CATEGORY,
+                publicId,
+                AuditMetadata.builder()
+                        .put("name", category.getName())
+                        .build()
+        );
     }
 
 }

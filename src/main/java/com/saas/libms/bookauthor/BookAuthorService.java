@@ -1,5 +1,9 @@
 package com.saas.libms.bookauthor;
 
+import com.saas.libms.audit.AuditAction;
+import com.saas.libms.audit.AuditEntityType;
+import com.saas.libms.audit.AuditLogService;
+import com.saas.libms.audit.AuditMetadata;
 import com.saas.libms.author.Author;
 import com.saas.libms.author.AuthorRepository;
 import com.saas.libms.book.Book;
@@ -23,6 +27,7 @@ public class BookAuthorService {
     private final BookAuthorRepository bookAuthorRepository;
     private final BookRepository bookRepository;
     private final AuthorRepository authorRepository;
+    private final AuditLogService auditLogService;
 
 //Create
     @Transactional
@@ -48,6 +53,18 @@ public class BookAuthorService {
         BookAuthor saved = bookAuthorRepository.save(bookAuthor);
 
         List<BookAuthorProjection> projections = bookAuthorRepository.findByBookPublicId(dto.bookPublicId(), institutionId);
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.BOOK_AUTHOR_LINKED,
+                AuditEntityType.BOOK_AUTHOR,
+                book.getPublicId(),
+                AuditMetadata.builder()
+                        .put("bookTitle",   book.getTitle())
+                        .put("authorName",  author.getName())
+                        .put("authorPublicId", author.getPublicId())
+                        .build()
+        );
 
         return projections.stream()
                 .filter(p-> p.getId().equals(saved.getId()))
@@ -120,6 +137,18 @@ public class BookAuthorService {
         List<BookAuthorProjection> projections =
                 bookAuthorRepository.findByBookPublicId(dto.bookPublicId(), institutionId);
 
+        auditLogService.log(
+                currentUser,
+                AuditAction.BOOK_AUTHOR_RELINKED,
+                AuditEntityType.BOOK_AUTHOR,
+                newBook.getPublicId(),
+                AuditMetadata.builder()
+                        .put("bookTitle",      newBook.getTitle())
+                        .put("oldAuthorName",  existing.getAuthor().getName())
+                        .put("newAuthorName",  newAuthor.getName())
+                        .build()
+        );
+
         return projections.stream()
                 .filter(p->p.getId().equals(updated.getId()))
                 .map(BookAuthorResponseDTO::from)
@@ -144,6 +173,17 @@ public class BookAuthorService {
         UUID authorInternalId = existing.getAuthor().getId();
 
         bookAuthorRepository.deleteByAuthorId(authorInternalId);
+
+       /* auditLogService.log(
+                currentUser,
+                AuditAction.BOOK_AUTHOR_UNLINKED,
+                AuditEntityType.BOOK_AUTHOR,
+                bookAuthorId,
+                AuditMetadata.builder()
+                        .put("bookTitle",  existing.getBook().getTitle())
+                        .put("authorName", existing.getAuthor().getName())
+                        .build()
+        );*/
     }
 
 

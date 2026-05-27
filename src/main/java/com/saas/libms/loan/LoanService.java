@@ -1,5 +1,9 @@
 package com.saas.libms.loan;
 
+import com.saas.libms.audit.AuditAction;
+import com.saas.libms.audit.AuditEntityType;
+import com.saas.libms.audit.AuditLogService;
+import com.saas.libms.audit.AuditMetadata;
 import com.saas.libms.book.Book;
 import com.saas.libms.book.BookRepository;
 import com.saas.libms.common.EmailService;
@@ -48,6 +52,8 @@ public class LoanService {
 
     //max active loans
     private static final int MAX_ACTIVE_LOANS_PER_MEMBER = 10;
+
+    private final AuditLogService auditLogService;
 
     //Create a loan
     @Transactional
@@ -170,6 +176,20 @@ public class LoanService {
                     reservationToClose.getPublicId(), loan.getPublicId());
         }
 
+        auditLogService.log(
+                currentUser,
+                AuditAction.LOAN_ISSUED,
+                AuditEntityType.LOAN,
+                loan.getPublicId(),
+                AuditMetadata.builder()
+                        .put("bookTitle",  book.getTitle())
+                        .put("bookPublicId", book.getPublicId())
+                        .put("memberName", member.getName())
+                        .put("memberPublicId", member.getPublicId())
+                        .put("dueDate",    loan .getDueDate().toString())
+                        .build()
+        );
+
         return LoanResponseDTO.from(loan);
 
 
@@ -209,8 +229,26 @@ public class LoanService {
         book.setCopiesAvailable(newAvailable);
         bookRepository.save(book);
 
-        //determine if return is lateRe
+        //determine if return is lateReturn
         loanRepository.save(loan);
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.LOAN_RETURNED,
+                AuditEntityType.LOAN,
+                loan.getPublicId(),
+                AuditMetadata.builder()
+                        .put("bookTitle",    book.getTitle())
+                        .put("bookPublicId", book.getPublicId())
+                        .put("memberName",   loan.getMember().getName())
+                        .put("daysKept",
+                                (int) (
+                                        LocalDate.now().toEpochDay()
+                                                - loan.getBorrowDate().toLocalDate().toEpochDay()
+                                )
+                        )
+                        .build()
+        );
 
         //Warn if books did not complete
         return  LoanResponseDTO.from(loan);

@@ -1,5 +1,9 @@
 package com.saas.libms.member;
 
+import com.saas.libms.audit.AuditAction;
+import com.saas.libms.audit.AuditEntityType;
+import com.saas.libms.audit.AuditLogService;
+import com.saas.libms.audit.AuditMetadata;
 import com.saas.libms.common.PublicIdGenerator;
 import com.saas.libms.exception.ConflictException;
 import com.saas.libms.exception.ResourceNotFoundException;
@@ -23,6 +27,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MemberService {
     private final MemberRepository memberRepository;
+    private final AuditLogService auditLogService;
 
     //create
     @Transactional
@@ -48,6 +53,17 @@ public class MemberService {
                 .build();
 
         Member saved = memberRepository.save(member);
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.MEMBER_CREATED,
+                AuditEntityType.MEMBER,
+                saved.getPublicId(),
+                AuditMetadata.builder()
+                        .put("name",  saved.getName())
+                        .put("email", saved.getEmail())
+                        .build()
+        );
 
         return MemberResponseDTO.from(saved);
     }
@@ -103,6 +119,17 @@ public class MemberService {
             member.setPhone(dto.phone());
         }
 
+        auditLogService.log(
+                currentUser,
+                AuditAction.MEMBER_UPDATED,
+                AuditEntityType.MEMBER,
+                member.getPublicId(),
+                AuditMetadata.builder()
+                        .put("name",  member.getName())
+                        .put("email", member.getEmail())
+                        .build()
+        );
+
         return MemberResponseDTO.from(member);
 
     }
@@ -117,6 +144,17 @@ public class MemberService {
                 .orElseThrow(()-> new ResourceNotFoundException("Member not found with ID: "+publicId));
 
         member.setStatus(MemberStatus.BLOCKED);
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.MEMBER_DELETED,
+                AuditEntityType.MEMBER,
+                publicId,
+                AuditMetadata.builder()
+                        .put("name",  member.getName())
+                        .put("email", member.getEmail())
+                        .build()
+        );
     }
 
     //block user(admin)
@@ -131,6 +169,23 @@ public class MemberService {
                 .orElseThrow(()-> new ResourceNotFoundException("Member no found with Id: "+publicId));
 
         member.setStatus(dto.status());
+
+        // Choose the most meaningful action depending on new status.
+        AuditAction action = (dto.status() == MemberStatus.BLOCKED)
+                ? AuditAction.MEMBER_BLOCKED
+                : AuditAction.MEMBER_UPDATED;
+
+        auditLogService.log(
+                currentUser,
+                action,
+                AuditEntityType.MEMBER,
+                member.getPublicId(),
+                AuditMetadata.builder()
+                        .put("name",      member.getName())
+                        //emind to put the old member status
+                        .put("newStatus", member.getStatus().name())
+                        .build()
+        );
         return MemberResponseDTO.from(member);
     }
 }

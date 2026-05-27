@@ -1,5 +1,9 @@
 package com.saas.libms.reservation;
 
+import com.saas.libms.audit.AuditAction;
+import com.saas.libms.audit.AuditEntityType;
+import com.saas.libms.audit.AuditLogService;
+import com.saas.libms.audit.AuditMetadata;
 import com.saas.libms.book.Book;
 import com.saas.libms.book.BookRepository;
 import com.saas.libms.common.PublicIdGenerator;
@@ -39,6 +43,7 @@ public class ReservationService {
     private final BookRepository bookRepository;
     private final InstitutionRepository institutionRepository;
     private final LoanRepository loanRepository;
+    private final AuditLogService auditLogService;
 
     //create reservation
     @Transactional
@@ -116,6 +121,20 @@ public class ReservationService {
             log.info("Reservation {} created for member {} on book {} at queue position {}",
                     reservation.getPublicId(), member.getPublicId(), book.getPublicId(), queuePosition);
 
+        auditLogService.log(
+                currentUser,
+                AuditAction.RESERVATION_CREATED,
+                AuditEntityType.RESERVATION,
+                reservation.getPublicId(),
+                AuditMetadata.builder()
+                        .put("bookTitle",    book.getTitle())
+                        .put("bookPublicId", book.getPublicId())
+                        .put("memberName",   member.getName())
+                        .put("memberPublicId", member.getPublicId())
+                        .put("queuePosition", queuePosition)
+                        .build()
+        );
+
             return ReservationResponseDTO.from(reservation);
 
         }
@@ -157,6 +176,18 @@ public class ReservationService {
 
         reservation = reservationRepository.save(reservation);
         log.info("Reservation {} cancelled. Reason: {}", publicId, reason);
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.RESERVATION_CANCELLED,
+                AuditEntityType.RESERVATION,
+                reservation.getPublicId(),
+                AuditMetadata.builder()
+                        .put("bookTitle",    reservation.getBook().getTitle())
+                        .put("memberName",   reservation.getMember().getName())
+                        .put("cancelReason", reason)
+                        .build()
+        );
 
         return ReservationResponseDTO.from(reservation);
     }

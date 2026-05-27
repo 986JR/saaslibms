@@ -1,5 +1,9 @@
 package com.saas.libms.user;
 
+import com.saas.libms.audit.AuditAction;
+import com.saas.libms.audit.AuditEntityType;
+import com.saas.libms.audit.AuditLogService;
+import com.saas.libms.audit.AuditMetadata;
 import com.saas.libms.common.PublicIdGenerator;
 import com.saas.libms.exception.ConflictException;
 import com.saas.libms.exception.ForbiddenExecption;
@@ -23,6 +27,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
     //Create user Only Admins
     @Transactional
@@ -52,6 +57,18 @@ public class UserService {
         User saved = userRepository.save(user);
         log.info("[UserService] Admin {} createde user {} in institution {}",
                 currentUser.getUsername(), saved.getPublicId(), institution.getPublicId());
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.USER_CREATED,
+                AuditEntityType.USER,
+                saved.getPublicId(),
+                AuditMetadata.builder()
+                        .put("username", saved.getUsername())
+                        .put("email",    saved.getEmail())
+                        .put("role",     saved.getRole().name())
+                        .build()
+        );
 
         return UserResponseDTO.from(saved);
     }
@@ -110,7 +127,26 @@ public class UserService {
             }
             applyAdminUpdate(target, dto);
         }
+
+
 User saved = userRepository.save(target);
+
+        AuditAction action = (dto.status() != null && dto.status() == UserStatus.DISABLED)
+                ? AuditAction.USER_DISABLED
+                : AuditAction.USER_UPDATED;
+
+        auditLogService.log(
+                currentUser,
+                action,
+                AuditEntityType.USER,
+                saved.getPublicId(),
+                AuditMetadata.builder()
+                        .put("username",  saved.getUsername())
+                        .put("email",     saved.getEmail())
+                        .put("oldStatus", target.getStatus().toString())
+                        .put("newStatus", saved.getStatus().name())
+                        .build()
+        );
         return  UserResponseDTO.from(saved);
 
     }
@@ -144,7 +180,21 @@ User saved = userRepository.save(target);
         }
         //Soft delete
         target.setStatus(UserStatus.DISABLED);
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.USER_DELETED,
+                AuditEntityType.USER,
+                targetPublicId,
+                AuditMetadata.builder()
+                        .put("username", target.getUsername())
+                        .put("email",    target.getEmail())
+                        .put("role",     target.getRole().name())
+                        .build()
+        );
+
         userRepository.save(target);
+
 
         log.info("[UserService] Admin {} disabled user {} in institution {}",
                 currentUserEntity.getPassword(),targetPublicId, currentUserEntity.getInstitution().getPublicId());

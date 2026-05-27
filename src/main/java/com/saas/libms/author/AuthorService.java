@@ -1,5 +1,9 @@
 package com.saas.libms.author;
 
+import com.saas.libms.audit.AuditAction;
+import com.saas.libms.audit.AuditEntityType;
+import com.saas.libms.audit.AuditLogService;
+import com.saas.libms.audit.AuditMetadata;
 import com.saas.libms.author.dto.AuthorCreateDTO;
 import com.saas.libms.author.dto.AuthorResponseDTO;
 import com.saas.libms.author.dto.AuthorUpdateDTO;
@@ -20,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthorService {
 
     private final AuthorRepository authorRepository;
+    private final AuditLogService auditLogService;
+
 
     //create
     @Transactional
@@ -36,6 +42,15 @@ public class AuthorService {
                 .status(AuthorStatus.ACTIVE)
                 .institution(institution)
                 .build();
+        auditLogService.log(
+                currentUser,
+                AuditAction.AUTHOR_CREATED,
+                AuditEntityType.AUTHOR,
+                author.getPublicId(),
+                AuditMetadata.builder()
+                        .put("name", author.getName())
+                        .build()
+        );
 
         return AuthorResponseDTO.from(authorRepository.save(author));
     }
@@ -73,6 +88,17 @@ public class AuthorService {
             }
             author.setName(dto.name());
         }
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.AUTHOR_UPDATED,
+                AuditEntityType.AUTHOR,
+                author.getPublicId(),
+                AuditMetadata.builder()
+                        .put("name", author.getName())
+                        .build()
+        );
+
         return AuthorResponseDTO.from(authorRepository.save(author));
 
     }
@@ -86,6 +112,17 @@ public class AuthorService {
 
         author.setStatus(AuthorStatus.DISABLED);
         authorRepository.save(author);
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.AUTHOR_DELETED,
+                AuditEntityType.AUTHOR,
+                publicId,
+                AuditMetadata.builder()
+                        .put("name", author.getName())
+                        .build()
+        );
+
     }
 
 }
