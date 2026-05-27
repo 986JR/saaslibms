@@ -21,7 +21,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             @Param("institutionId") UUID institutionId,
             @Param("action")        AuditAction action,
             @Param("entityType")    AuditEntityType entityType,
-            @Param("actorId")       UUID actorId,
+            @Param("actorId")       String actorId,
             Pageable pageable
     );
 

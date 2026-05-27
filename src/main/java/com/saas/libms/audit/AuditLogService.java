@@ -21,7 +21,7 @@ public class AuditLogService {
         try {
             AuditLog entry = AuditLog.builder()
                     .institutionId(actor.getUser().getInstitution().getId())
-                    .actorId(actor.getUser().getId())
+                    .actorId(actor.getUser().getPublicId())
                     .actorEmail(actor.getUser().getEmail())
                     .actorRole(actor.getUser().getRole().name())
                     .action(action)

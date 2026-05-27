@@ -30,7 +30,7 @@ public class AuditLogController {
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String entityType,
-            @RequestParam(required = false) UUID actorId,
+            @RequestParam(required = false) String actorId,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size
             ) {

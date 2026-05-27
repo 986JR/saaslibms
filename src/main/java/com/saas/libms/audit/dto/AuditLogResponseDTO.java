@@ -10,7 +10,7 @@ import java.util.UUID;
 public record AuditLogResponseDTO(
         UUID id,
         UUID institutionId,
-        UUID actorId,
+        String actorId,
         String actorEmail,
         String actorRole,
         AuditAction action,

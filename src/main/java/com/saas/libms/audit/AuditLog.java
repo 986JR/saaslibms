@@ -28,11 +28,11 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "instituiton_id", nullable = false)
+    @Column(name = "institution_id", nullable = false)
     private UUID institutionId;
 
     @Column(name = "actor_id", nullable = false)
-    private UUID actorId;
+    private String actorId;
 
     @Column(name = "actor_email", nullable = false)
     private String actorEmail;
