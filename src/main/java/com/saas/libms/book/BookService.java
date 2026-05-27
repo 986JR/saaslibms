@@ -1,5 +1,9 @@
 package com.saas.libms.book;
 
+import com.saas.libms.audit.AuditAction;
+import com.saas.libms.audit.AuditEntityType;
+import com.saas.libms.audit.AuditLogService;
+import com.saas.libms.audit.AuditMetadata;
 import com.saas.libms.book.dto.BookCreateDTO;
 import com.saas.libms.book.dto.BookResponseDTO;
 import com.saas.libms.book.dto.BookUpdateDTO;
@@ -25,6 +29,7 @@ public class BookService {
 
     private final BookRepository bookRepository;
     private final CategoryRepository categoryRepository;
+    private final AuditLogService auditLogService;
    // private final PublicIdGenerator publicIdGenerator;
 
     //Create Book
@@ -54,6 +59,19 @@ public class BookService {
                 .copiesAvailable(dto.copiesTotal())
                 .category(category)
                 .build();
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.BOOK_CREATED,
+                AuditEntityType.BOOK,
+                book.getPublicId(),
+                AuditMetadata.builder()
+                        .put("title",     book.getTitle())
+                        .put("isbn",      book.getIsbn())
+                        .put("publisher", book.getPublisher())
+                        .put("copies",    book.getCopiesTotal())
+                        .build()
+        );
 
         return BookResponseDTO.from(bookRepository.save(book));
     }
@@ -112,6 +130,16 @@ public class BookService {
 
         }
 
+        auditLogService.log(
+                currentUser,
+                AuditAction.BOOK_UPDATED,
+                AuditEntityType.BOOK,
+                book.getPublicId(),
+                AuditMetadata.builder()
+                        .put("title", book.getTitle())
+                        .build()
+        );
+
         return BookResponseDTO.from(bookRepository.save(book));
     }
 
@@ -120,6 +148,16 @@ public class BookService {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
         Book book = findBookOrThrow(publicId, institutionId);
         bookRepository.delete(book);
+
+        auditLogService.log(
+                currentUser,
+                AuditAction.BOOK_DELETED,
+                AuditEntityType.BOOK,
+                publicId,
+                AuditMetadata.builder()
+                        .put("title", book.getTitle())
+                        .build()
+        );
     }
 
     //helpers
