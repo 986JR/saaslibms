@@ -73,12 +73,18 @@ public class UserService {
         return UserResponseDTO.from(saved);
     }
 
-    //Get All Users, Admins only
+    //Get All Users, Admins or System only
     @Transactional(readOnly = true)
     public List<UserResponseDTO> getAllUsers(CustomUserDetails currentUser) {
-        if(currentUser.getUser().getRole() != UserRole.ADMIN) {
-            throw new ForbiddenExecption("Only admins can list Users");
+        if (currentUser.getUser().getRole() != UserRole.ADMIN && currentUser.getUser().getRole() != UserRole.SYSTEM) {
+            throw new ForbiddenExecption("Only admins or system admins can list Users");
+        }
 
+        if (currentUser.getUser().getRole() == UserRole.SYSTEM) {
+            return userRepository.findAll()
+                    .stream()
+                    .map(UserResponseDTO::from)
+                    .toList();
         }
 
         return userRepository

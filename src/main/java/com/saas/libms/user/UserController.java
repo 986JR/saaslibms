@@ -38,7 +38,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<List<UserResponseDTO>>> getAllUsers(
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {

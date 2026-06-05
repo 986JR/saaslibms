@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,4 +34,17 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     User findByPublicIdAndInstitutionId(String publicId, UUID institutionId);
 
     boolean existsByPublicIdAndInstitutionId(String publicId, UUID institutionId);
+
+    Optional<User> findByPublicId(String publicId);
+
+    @Query("SELECT u FROM User u WHERE " +
+           "(:institutionId IS NULL OR u.institution.id = :institutionId) AND " +
+           "(:role IS NULL OR u.role = :role)")
+    Page<User> findAllGlobal(
+            @Param("institutionId") UUID institutionId,
+            @Param("role") UserRole role,
+            Pageable pageable
+    );
+
+    long countByRole(UserRole role);
 }

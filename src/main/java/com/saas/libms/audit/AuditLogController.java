@@ -17,20 +17,24 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+import com.saas.libms.institution.InstitutionRepository;
+
 @RestController
 @RequestMapping("/api/v1/audit-logs")
 @RequiredArgsConstructor
 public class AuditLogController {
 
     private final AuditLogRepository auditLogRepository;
+    private final InstitutionRepository institutionRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<Page<AuditLogResponseDTO>>> getAuditLogs(
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String entityType,
             @RequestParam(required = false) String actorId,
+            @RequestParam(required = false) String institutionPublicId,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size
             ) {
@@ -38,16 +42,29 @@ public class AuditLogController {
         int safeSize = Math.min(size, 100);
         Pageable pageable = PageRequest.of(page, safeSize);
 
-        UUID institutionId = currentUser.getUser().getInstitution().getId();
-
         // Parse optional enum filters. Invalid values are treated as "no filter"
         // rather than throwing an exception — cleaner UX for the frontend.
         AuditAction actionFilter = parseAction(action);
         AuditEntityType entityTypeFilter = parseEntityType(entityType);
 
-        Page<AuditLogResponseDTO> result = auditLogRepository
-                .findAllByInstitutionId(institutionId, actionFilter, entityTypeFilter, actorId, pageable)
-                .map(AuditLogResponseDTO::from);
+        Page<AuditLogResponseDTO> result;
+
+        if (currentUser.getUser().getRole() == com.saas.libms.user.UserRole.SYSTEM) {
+            UUID filterInstId = null;
+            if (institutionPublicId != null && !institutionPublicId.isBlank()) {
+                filterInstId = institutionRepository.findByPublicId(institutionPublicId)
+                        .map(com.saas.libms.institution.Institution::getId)
+                        .orElse(null);
+            }
+            result = auditLogRepository
+                    .findAllForSystem(actionFilter, entityTypeFilter, filterInstId, pageable)
+                    .map(AuditLogResponseDTO::from);
+        } else {
+            UUID institutionId = currentUser.getUser().getInstitution().getId();
+            result = auditLogRepository
+                    .findAllByInstitutionId(institutionId, actionFilter, entityTypeFilter, actorId, pageable)
+                    .map(AuditLogResponseDTO::from);
+        }
 
         return ResponseEntity.ok(ApiResponse.success("Audit logs retrieved successfully", result));
 
