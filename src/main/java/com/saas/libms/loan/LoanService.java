@@ -229,6 +229,15 @@ public class LoanService {
         book.setCopiesAvailable(newAvailable);
         bookRepository.save(book);
 
+        // Update loan status and quantity
+        if (returnQty == loan.getQuantity()) {
+            loan.setStatus(LoanStatus.RETURNED);
+            loan.setReturnDate(LocalDate.now());
+        } else {
+            // Partial return: deduct the quantity but keep it active
+            loan.setQuantity(loan.getQuantity() - returnQty);
+        }
+
         //determine if return is lateReturn
         loanRepository.save(loan);
 
