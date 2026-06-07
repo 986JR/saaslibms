@@ -47,4 +47,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     );
 
     long countByRole(UserRole role);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.status = 'ACTIVE' AND u.role != 'SYSTEM'")
+    long countActiveInstitutionUsers();
+
+    // Count users per institution — used in institution activity ranking
+    @Query("SELECT u.institution.id, COUNT(u) FROM User u WHERE u.institution IS NOT NULL GROUP BY u.institution.id")
+    List<Object[]> countUsersPerInstitution();
 }

@@ -169,6 +169,41 @@ Optional<Reservation> findActiveReservationForMemberAndBook(
         @Param("bookId") UUID bookId
 );
 
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.status = 'PENDING'")
+    long countPendingReservations();
+
+    // Reservation count per institution — used in institution activity ranking
+    @Query("SELECT r.institution.id, COUNT(r) FROM Reservation r GROUP BY r.institution.id")
+    List<Object[]> countReservationsPerInstitution();
+
+    // Top reserved books — returns [bookPublicId, bookTitle, institutionName, count]
+    @Query("""
+    SELECT r.book.publicId, r.book.title, r.book.institution.name, COUNT(r)
+    FROM Reservation r
+    GROUP BY r.book.publicId, r.book.title, r.book.institution.name
+    ORDER BY COUNT(r) DESC
+    """)
+    List<Object[]> findTopReservedBooks(Pageable pageable);
+
+    // Top reserved books filtered by institution
+    @Query("""
+    SELECT r.book.publicId, r.book.title, r.book.institution.name, COUNT(r)
+    FROM Reservation r
+    WHERE r.institution.id = :institutionId
+    GROUP BY r.book.publicId, r.book.title, r.book.institution.name
+    ORDER BY COUNT(r) DESC
+    """)
+    List<Object[]> findTopReservedBooksByInstitution(@Param("institutionId") UUID institutionId, Pageable pageable);
+
+    // Reservations created per day
+    @Query("""
+    SELECT CAST(r.createdAt AS LocalDate), COUNT(r)
+    FROM Reservation r
+    WHERE r.createdAt >= :from
+    GROUP BY CAST(r.createdAt AS LocalDate)
+    ORDER BY CAST(r.createdAt AS LocalDate) ASC
+    """)
+    List<Object[]> countReservationsPerDay(@Param("from") LocalDateTime from);
 
 
 

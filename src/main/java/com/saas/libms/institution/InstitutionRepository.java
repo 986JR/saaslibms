@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,4 +32,21 @@ public interface InstitutionRepository extends JpaRepository<Institution, UUID> 
     );
 
     long countByStatus(InstitutionStatus status);
+
+    @Query("SELECT COUNT(i) FROM Institution i WHERE i.status = 'ACTIVE'")
+    long countByStatusActive();
+
+    @Query("SELECT COUNT(i) FROM Institution i WHERE i.status = 'SUSPENDED'")
+    long countByStatusSuspended();
+
+    // For institution growth chart — registrations per day
+// Returns Object[] where [0]=date (LocalDate), [1]=count (Long)
+    @Query("""
+    SELECT CAST(i.createdAt AS LocalDate), COUNT(i)
+    FROM Institution i
+    WHERE i.createdAt >= :from
+    GROUP BY CAST(i.createdAt AS LocalDate)
+    ORDER BY CAST(i.createdAt AS LocalDate) ASC
+    """)
+    List<Object[]> countRegistrationsPerDay(@Param("from") LocalDateTime from);
 }

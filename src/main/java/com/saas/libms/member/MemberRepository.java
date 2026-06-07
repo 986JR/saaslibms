@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,4 +50,8 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
             @Param("institutionId") UUID institutionId,
             @Param("excludePublicId") String excludePublicId
     );
+
+    // Member count per institution — used in institution activity ranking
+    @Query("SELECT m.institution.id, COUNT(m) FROM Member m GROUP BY m.institution.id")
+    List<Object[]> countMembersPerInstitution();
 }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -90,4 +91,58 @@ public interface LoanRepository extends JpaRepository<Loan, UUID> {
             """)
     List<Loan> findActiveByMemberAndInstitution(@Param("memberId") UUID memberId,
                                                 @Param("institutionId") UUID institutionId);
+
+    @Query("SELECT COUNT(l) FROM Loan l WHERE l.status = 'BORROWED' OR l.status = 'LATE'")
+    long countActiveLoans();
+
+    @Query("SELECT COUNT(l) FROM Loan l WHERE l.status = 'LATE'")
+    long countOverdueLoans();
+
+    // Loan count per institution — used in institution activity ranking
+    @Query("SELECT l.institution.id, COUNT(l) FROM Loan l GROUP BY l.institution.id")
+    List<Object[]> countLoansPerInstitution();
+
+    // Top borrowed books — returns [bookPublicId, bookTitle, institutionName, count]
+    @Query("""
+    SELECT l.book.publicId, l.book.title, l.book.institution.name, COUNT(l)
+    FROM Loan l
+    GROUP BY l.book.publicId, l.book.title, l.book.institution.name
+    ORDER BY COUNT(l) DESC
+    """)
+    List<Object[]> findTopBorrowedBooks(Pageable pageable);
+
+    // Top borrowed books filtered by institution
+    @Query("""
+    SELECT l.book.publicId, l.book.title, l.book.institution.name, COUNT(l)
+    FROM Loan l
+    WHERE l.institution.id = :institutionId
+    GROUP BY l.book.publicId, l.book.title, l.book.institution.name
+    ORDER BY COUNT(l) DESC
+    """)
+    List<Object[]> findTopBorrowedBooksByInstitution(@Param("institutionId") UUID institutionId, Pageable pageable);
+
+    // Loans created per day — for trend line chart
+// Returns Object[] where [0]=LocalDate, [1]=count
+    @Query("""
+    SELECT CAST(l.borrowDate AS LocalDate), COUNT(l)
+    FROM Loan l
+    WHERE l.borrowDate >= :from
+    GROUP BY CAST(l.borrowDate AS LocalDate)
+    ORDER BY CAST(l.borrowDate AS LocalDate) ASC
+    """)
+    List<Object[]> countLoansPerDay(@Param("from") LocalDateTime from);
+
+    // Loan status distribution
+    @Query("SELECT l.status, COUNT(l) FROM Loan l GROUP BY l.status")
+    List<Object[]> countByStatus();
+
+    // Least borrowed books (books with fewest loans, excluding zero — handled in service)
+    @Query("""
+    SELECT l.book.publicId, l.book.title, l.book.institution.name, COUNT(l)
+    FROM Loan l
+    GROUP BY l.book.publicId, l.book.title, l.book.institution.name
+    ORDER BY COUNT(l) ASC
+    """)
+    List<Object[]> findLeastBorrowedBooks(Pageable pageable);
+
 }
