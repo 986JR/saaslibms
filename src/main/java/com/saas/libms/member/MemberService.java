@@ -13,6 +13,8 @@ import com.saas.libms.member.dto.MemberStatusUpdateDTO;
 import com.saas.libms.member.dto.MemberUpdateDTO;
 import com.saas.libms.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +30,7 @@ import java.util.UUID;
 public class MemberService {
     private final MemberRepository memberRepository;
     private final AuditLogService auditLogService;
+    public static final String MEMBERS_CACHE = "members";
 
     //create
     @Transactional
@@ -79,6 +82,10 @@ public class MemberService {
     }
 
     //Get by publicId
+    @Cacheable(
+            value = MEMBERS_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId"
+    )
     public  MemberResponseDTO getMemberByPublicId(String publicId, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
         Member member =  memberRepository
@@ -90,6 +97,10 @@ public class MemberService {
 
     //Update
     @Transactional
+    @CacheEvict(
+            value = MEMBERS_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId()"
+    )
     public MemberResponseDTO updateMember(String publicId, MemberUpdateDTO dto, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
 
@@ -137,6 +148,10 @@ public class MemberService {
     //delete
 
     @Transactional
+    @CacheEvict(
+            value = MEMBERS_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId"
+    )
     public void deleteMember(String publicId, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
 

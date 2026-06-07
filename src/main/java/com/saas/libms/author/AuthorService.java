@@ -12,6 +12,8 @@ import com.saas.libms.exception.ConflictException;
 import com.saas.libms.exception.ResourceNotFoundException;
 import com.saas.libms.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +27,7 @@ public class AuthorService {
 
     private final AuthorRepository authorRepository;
     private final AuditLogService auditLogService;
+    public static final String AUTHORS_CACHE = "authors";
 
 
     //create
@@ -65,6 +68,10 @@ public class AuthorService {
     }
 
     //get Author ById
+    @Cacheable(
+            value = AUTHORS_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId"
+    )
     public AuthorResponseDTO getAuthorByPublicId(String publicId, CustomUserDetails currentUser) {
 
         var institutionId = currentUser.getUser().getInstitution().getId();
@@ -76,6 +83,10 @@ public class AuthorService {
 
     //Update
     @Transactional
+    @CacheEvict(
+            value = AUTHORS_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId"
+    )
     public  AuthorResponseDTO updateAuthor(String publicId, AuthorUpdateDTO dto, CustomUserDetails currentUser) {
         var institutionId = currentUser.getUser().getInstitution().getId();
         var author = authorRepository.findByPublicIdAndInstitutionId(publicId, institutionId)
@@ -105,6 +116,10 @@ public class AuthorService {
 
     //Delete
     @Transactional
+    @CacheEvict(
+            value = AUTHORS_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId"
+    )
     public void deleteAuthor(String publicId, CustomUserDetails currentUser) {
         var institutionId = currentUser.getUser().getInstitution().getId();
         var author = authorRepository.findByPublicIdAndInstitutionId(publicId, institutionId)

@@ -13,6 +13,8 @@ import com.saas.libms.exception.ResourceNotFoundException;
 import com.saas.libms.institution.Institution;
 import com.saas.libms.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -27,6 +29,7 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final AuditLogService auditLogService;
+    public static final String CATEGORIES_CACHE = "categories";
 
     //Create
     @Transactional
@@ -70,6 +73,10 @@ public class CategoryService {
     }
 
     //get By Name
+    @Cacheable(
+            value = CATEGORIES_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #name"
+    )
     public CategoryResponseDTO getCategoryByName(String name, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
 
@@ -82,6 +89,10 @@ public class CategoryService {
 
     //update
     @Transactional
+    @CacheEvict(
+            value = CATEGORIES_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId"
+    )
     public CategoryResponseDTO updateCategory(String publicId, CategoryUpdateDTO dto, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
 
@@ -113,6 +124,10 @@ public class CategoryService {
     }
 
     @Transactional
+    @CacheEvict(
+            value = CATEGORIES_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId"
+    )
     public void deleteCategory(String publicId, CustomUserDetails currentUSer) {
 
         UUID institutionId = currentUSer.getUser().getInstitution().getId();

@@ -14,6 +14,9 @@ import com.saas.libms.exception.ConflictException;
 import com.saas.libms.exception.ResourceNotFoundException;
 import com.saas.libms.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,10 +33,15 @@ public class BookService {
     private final BookRepository bookRepository;
     private final CategoryRepository categoryRepository;
     private final AuditLogService auditLogService;
+    public static final String BOOKS_CACHE = "books";
    // private final PublicIdGenerator publicIdGenerator;
 
     //Create Book
     @Transactional
+//    @CachePut(
+//            value = BOOKS_CACHE,
+//            key = "#currentUser.user.institution.id + ':' + #result.publicId()"
+//    )
     public BookResponseDTO createBook(BookCreateDTO dto, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
 
@@ -85,6 +93,10 @@ public class BookService {
     }
 
     //Get Books By Id
+    @Cacheable(
+            value = BOOKS_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId"
+    )
     public BookResponseDTO getBookByPubliId(String publicId, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
 
@@ -94,6 +106,10 @@ public class BookService {
 
     //PAthcing, update
     @Transactional
+    @CacheEvict(
+            value = BOOKS_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #result.publicId()"
+    )
     public BookResponseDTO updateBook(String publicId, BookUpdateDTO dto, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
         Book book = findBookOrThrow(publicId, institutionId);
@@ -144,6 +160,10 @@ public class BookService {
     }
 
     @Transactional
+    @CacheEvict(
+            value = BOOKS_CACHE,
+            key = "#currentUser.user.institution.id + ':' + #publicId"
+    )
     public void deleteBook(String publicId, CustomUserDetails currentUser) {
         UUID institutionId = currentUser.getUser().getInstitution().getId();
         Book book = findBookOrThrow(publicId, institutionId);
