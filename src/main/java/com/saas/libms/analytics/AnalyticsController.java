@@ -7,6 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import com.saas.libms.analytics.dto.EndpointMetricsDTO;
+//   import com.saas.libms.analytics.dto.ErrorRateDTO;
+//   import com.saas.libms.analytics.dto.TopViewedBookDTO;
+//   import com.saas.libms.analytics.dto.TrafficSummaryDTO;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -188,5 +193,99 @@ public class AnalyticsController {
     public ResponseEntity<ApiResponse<RateLimitViolationsDTO>> getRateLimitViolations() {
         RateLimitViolationsDTO data = analyticsService.getRateLimitViolations();
         return ResponseEntity.ok(ApiResponse.success("Rate limit violations retrieved", data));
+    }
+
+
+    @GetMapping("/books/top-viewed")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<List<TopViewedBookDTO>>> getTopViewedBooks(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) UUID institutionId,
+            @RequestParam(defaultValue = "30") int days) {
+        int safeDays = Math.min(Math.max(days, 1), 365);
+        List<TopViewedBookDTO> data = analyticsService.getTopViewedBooks(limit, institutionId, safeDays);
+        return ResponseEntity.ok(ApiResponse.success("Top viewed books retrieved", data));
+    }
+
+    /**
+     * Book views per day — how many book detail fetches happened each day.
+     * @param days number of days to look back (default 30)
+     */
+    @GetMapping("/books/views-trend")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<List<DailyCountDTO>>> getBookViewsTrend(
+            @RequestParam(defaultValue = "30") int days) {
+        int safeDays = Math.min(Math.max(days, 1), 365);
+        List<DailyCountDTO> data = analyticsService.getBookViewsTrend(safeDays);
+        return ResponseEntity.ok(ApiResponse.success("Book views trend retrieved", data));
+    }
+
+    // ── Traffic — Phase 22-B additions ───────────────────────────────────────
+
+    /**
+     * Live traffic KPI cards: requests/min, requests/hour, avg response time, error rate.
+     * Always reflects the last minute and last hour — no params needed.
+     */
+    @GetMapping("/traffic/summary")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<TrafficSummaryDTO>> getTrafficSummary() {
+        TrafficSummaryDTO data = analyticsService.getTrafficSummary();
+        return ResponseEntity.ok(ApiResponse.success("Traffic summary retrieved", data));
+    }
+
+    /**
+     * Most called endpoints.
+     * @param limit number of results (1–50, default 10)
+     * @param days  how far back to look (1–365, default 7)
+     */
+    @GetMapping("/traffic/top-endpoints")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<List<EndpointMetricsDTO>>> getTopEndpoints(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "7") int days) {
+        int safeDays = Math.min(Math.max(days, 1), 365);
+        List<EndpointMetricsDTO> data = analyticsService.getTopEndpoints(limit, safeDays);
+        return ResponseEntity.ok(ApiResponse.success("Top endpoints retrieved", data));
+    }
+
+    /**
+     * Slowest endpoints by average response time — performance bottlenecks.
+     * @param limit number of results (1–50, default 10)
+     * @param days  how far back to look (1–365, default 7)
+     */
+    @GetMapping("/traffic/slowest-endpoints")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<List<EndpointMetricsDTO>>> getSlowestEndpoints(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "7") int days) {
+        int safeDays = Math.min(Math.max(days, 1), 365);
+        List<EndpointMetricsDTO> data = analyticsService.getSlowestEndpoints(limit, safeDays);
+        return ResponseEntity.ok(ApiResponse.success("Slowest endpoints retrieved", data));
+    }
+
+    /**
+     * HTTP response status distribution — 2xx / 4xx / 5xx breakdown.
+     * @param days how far back to look (1–365, default 7)
+     */
+    @GetMapping("/traffic/error-rates")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<ErrorRateDTO>> getErrorRates(
+            @RequestParam(defaultValue = "7") int days) {
+        int safeDays = Math.min(Math.max(days, 1), 365);
+        ErrorRateDTO data = analyticsService.getErrorRates(safeDays);
+        return ResponseEntity.ok(ApiResponse.success("Error rates retrieved", data));
+    }
+
+    /**
+     * Total API requests per day — traffic volume trend line chart.
+     * @param days how far back to look (1–365, default 30)
+     */
+    @GetMapping("/traffic/trend")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<List<DailyCountDTO>>> getTrafficTrend(
+            @RequestParam(defaultValue = "30") int days) {
+        int safeDays = Math.min(Math.max(days, 1), 365);
+        List<DailyCountDTO> data = analyticsService.getTrafficTrend(safeDays);
+        return ResponseEntity.ok(ApiResponse.success("Traffic trend retrieved", data));
     }
 }

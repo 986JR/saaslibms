@@ -17,6 +17,11 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.saas.libms.analytics.dto.EndpointMetricsDTO;
+//   import com.saas.libms.analytics.dto.ErrorRateDTO;
+//   import com.saas.libms.analytics.dto.TopViewedBookDTO;
+//   import com.saas.libms.analytics.dto.TrafficSummaryDTO;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -35,6 +40,9 @@ public class AnalyticsService {
     private final ReservationRepository  reservationRepository;
     private final AuditLogRepository     auditLogRepository;
     private final StringRedisTemplate    redisTemplate;
+
+    private final ApiRequestLogRepository apiRequestLogRepository;
+    private final BookViewEventRepository bookViewEventRepository;
 
 
     // 1. Platform Summary
@@ -346,5 +354,158 @@ public class AnalyticsService {
             map.put(id, count);
         }
         return map;
+    }
+
+
+    public List<TopViewedBookDTO> getTopViewedBooks(int limit, UUID institutionId, int days) {
+        int safeLimit = Math.min(limit, 50);
+        LocalDateTime from = LocalDate.now().minusDays(days).atStartOfDay();
+
+        List<Object[]> rows = (institutionId == null)
+                ? bookViewEventRepository.findTopViewedBooks(from, PageRequest.of(0, safeLimit))
+                : bookViewEventRepository.findTopViewedBooksByInstitution(institutionId, from, PageRequest.of(0, safeLimit));
+
+        return rows.stream()
+                .map(r -> new TopViewedBookDTO(
+                        (String) r[0],   // bookPublicId
+                        (String) r[1],   // bookTitle
+                        (UUID)   r[2],   // institutionId
+                        (Long)   r[3]    // viewCount
+                ))
+                .collect(Collectors.toList());
+    }
+
+    // 14. Book Views Trend
+
+    /**
+     * Book view events per day for the last N days.
+     * Useful for spotting spikes in resource interest.
+     */
+    public List<DailyCountDTO> getBookViewsTrend(int days) {
+        LocalDateTime from = LocalDate.now().minusDays(days).atStartOfDay();
+        List<Object[]> rows = bookViewEventRepository.countViewsPerDay(from);
+        return fillDailyGaps(rows, days);
+    }
+
+    // 15. Traffic Summary
+
+    /**
+     * Live traffic KPI values — requests/min, avg response time, error rate.
+     * All derived from api_request_logs for recent time windows.
+     */
+    public TrafficSummaryDTO getTrafficSummary() {
+        LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
+        LocalDateTime oneHourAgo  = LocalDateTime.now().minusHours(1);
+        LocalDateTime todayStart  = LocalDate.now().atStartOfDay();
+
+        long requestsLastMinute = apiRequestLogRepository.countRequestsSince(oneMinuteAgo);
+        long requestsLastHour   = apiRequestLogRepository.countRequestsSince(oneHourAgo);
+        long requestsToday      = apiRequestLogRepository.countRequestsSince(todayStart);
+
+        Double avgMs = apiRequestLogRepository.findAverageResponseTime(oneHourAgo);
+        double avgResponseTimeMs = (avgMs != null) ? avgMs : 0.0;
+
+        // Error count = 4xx + 5xx in the last hour
+        List<Object[]> statusRows = apiRequestLogRepository.countByStatusCode(oneHourAgo);
+        long errorCount = statusRows.stream()
+                .filter(r -> ((Integer) r[0]) >= 400)
+                .mapToLong(r -> (Long) r[1])
+                .sum();
+
+        double errorRatePercent = requestsLastHour > 0
+                ? (errorCount * 100.0) / requestsLastHour
+                : 0.0;
+
+        return new TrafficSummaryDTO(
+                requestsLastMinute,
+                requestsLastHour,
+                requestsToday,
+                Math.round(avgResponseTimeMs * 100.0) / 100.0, // 2 decimal places
+                errorCount,
+                Math.round(errorRatePercent * 100.0) / 100.0
+        );
+    }
+
+    // 16. Top Endpoints
+
+    /**
+     * Most called API endpoints in the last N days.
+     * Returns endpoint name + call count + avg response time.
+     */
+    public List<EndpointMetricsDTO> getTopEndpoints(int limit, int days) {
+        int safeLimit = Math.min(limit, 50);
+        LocalDateTime from = LocalDate.now().minusDays(days).atStartOfDay();
+        List<Object[]> rows = apiRequestLogRepository.findTopEndpoints(from, PageRequest.of(0, safeLimit));
+
+        return rows.stream()
+                .map(r -> new EndpointMetricsDTO(
+                        (String) r[0],                   // endpoint
+                        (Long)   r[1],                   // callCount
+                        0.0                              // avgDurationMs — filled in separately if needed
+                ))
+                .collect(Collectors.toList());
+    }
+
+    // 17. Slowest Endpoints
+
+    /**
+     * Endpoints with the highest average response time — performance bottlenecks.
+     */
+    public List<EndpointMetricsDTO> getSlowestEndpoints(int limit, int days) {
+        int safeLimit = Math.min(limit, 50);
+        LocalDateTime from = LocalDate.now().minusDays(days).atStartOfDay();
+        List<Object[]> rows = apiRequestLogRepository.findSlowestEndpoints(from, PageRequest.of(0, safeLimit));
+
+        return rows.stream()
+                .map(r -> new EndpointMetricsDTO(
+                        (String) r[0],                          // endpoint
+                        0L,                                     // callCount — not in this query
+                        ((Number) r[1]).doubleValue()           // avgDurationMs
+                ))
+                .collect(Collectors.toList());
+    }
+
+    // 18. Error Rates
+
+    /**
+     * HTTP response status distribution for the last N days.
+     * Grouped into 2xx / 4xx / 5xx buckets.
+     */
+    public ErrorRateDTO getErrorRates(int days) {
+        LocalDateTime from = LocalDate.now().minusDays(days).atStartOfDay();
+        List<Object[]> rows = apiRequestLogRepository.countByStatusCodeBucket(from);
+
+        long count2xx = 0, count4xx = 0, count5xx = 0;
+        for (Object[] row : rows) {
+            String bucket = (String) row[0];
+            long count = (Long) row[1];
+            switch (bucket) {
+                case "2xx" -> count2xx = count;
+                case "4xx" -> count4xx = count;
+                case "5xx" -> count5xx = count;
+            }
+        }
+
+        long total = count2xx + count4xx + count5xx;
+        double errorRate = total > 0
+                ? ((count4xx + count5xx) * 100.0) / total
+                : 0.0;
+
+        return new ErrorRateDTO(
+                count2xx, count4xx, count5xx, total,
+                Math.round(errorRate * 100.0) / 100.0
+        );
+    }
+
+    //19. Traffic Trend
+
+    /**
+     * Total API requests per day for the last N days.
+     * Zero-fill applied for days with no traffic.
+     */
+    public List<DailyCountDTO> getTrafficTrend(int days) {
+        LocalDateTime from = LocalDate.now().minusDays(days).atStartOfDay();
+        List<Object[]> rows = apiRequestLogRepository.countRequestsPerDay(from);
+        return fillDailyGaps(rows, days);
     }
 }
