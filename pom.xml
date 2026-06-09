@@ -128,7 +128,15 @@
             <artifactId>bucket4j-redis</artifactId>
             <version>8.10.1</version>
         </dependency>
-
+        <!-- Phase 22-C: Infrastructure metrics — add to pom.xml -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
 
         <!-- JUnit 5 -->
         <dependency>
