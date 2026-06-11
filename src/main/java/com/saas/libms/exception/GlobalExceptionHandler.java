@@ -17,6 +17,7 @@ import java.util.List;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
 //1 custom
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex){
@@ -69,8 +70,17 @@ public class GlobalExceptionHandler {
              .status(HttpStatus.BAD_REQUEST)
              .body(ApiResponse.error(message));
  }
+// 5
+    @ExceptionHandler(org.springframework.security.authorization.AuthorizationDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(
+            org.springframework.security.authorization.AuthorizationDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("Access denied"));
+    }
 
- //5
+ //6
  @ExceptionHandler(Exception.class)
  public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception ex) {
      log.error("Unexpected error: {}", ex.getMessage(), ex);

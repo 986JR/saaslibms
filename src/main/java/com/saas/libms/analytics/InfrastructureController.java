@@ -25,7 +25,7 @@ public class InfrastructureController {
      * Heap usage > 85% and CPU > 80% are warning thresholds.
      */
     @GetMapping("/jvm")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<JvmMetricsDTO>> getJvmMetrics() {
         JvmMetricsDTO data = infrastructureService.getJvmMetrics();
         return ResponseEntity.ok(ApiResponse.success("JVM metrics retrieved", data));
@@ -39,7 +39,7 @@ public class InfrastructureController {
      * tableRowCounts is the "Storage Usage" breakdown table.
      */
     @GetMapping("/database")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<DatabaseMetricsDTO>> getDatabaseMetrics() {
         DatabaseMetricsDTO data = infrastructureService.getDatabaseMetrics();
         return ResponseEntity.ok(ApiResponse.success("Database metrics retrieved", data));
@@ -53,7 +53,7 @@ public class InfrastructureController {
      * cacheKeys and rateLimitKeys help confirm both Phase 20 and Phase 21 are working.
      */
     @GetMapping("/redis")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<RedisMetricsDTO>> getRedisMetrics() {
         RedisMetricsDTO data = infrastructureService.getRedisMetrics();
         return ResponseEntity.ok(ApiResponse.success("Redis metrics retrieved", data));

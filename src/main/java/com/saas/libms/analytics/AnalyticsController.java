@@ -197,7 +197,7 @@ public class AnalyticsController {
 
 
     @GetMapping("/books/top-viewed")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<List<TopViewedBookDTO>>> getTopViewedBooks(
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) UUID institutionId,
@@ -212,7 +212,7 @@ public class AnalyticsController {
      * @param days number of days to look back (default 30)
      */
     @GetMapping("/books/views-trend")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<List<DailyCountDTO>>> getBookViewsTrend(
             @RequestParam(defaultValue = "30") int days) {
         int safeDays = Math.min(Math.max(days, 1), 365);
@@ -227,7 +227,7 @@ public class AnalyticsController {
      * Always reflects the last minute and last hour — no params needed.
      */
     @GetMapping("/traffic/summary")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<TrafficSummaryDTO>> getTrafficSummary() {
         TrafficSummaryDTO data = analyticsService.getTrafficSummary();
         return ResponseEntity.ok(ApiResponse.success("Traffic summary retrieved", data));
@@ -239,7 +239,7 @@ public class AnalyticsController {
      * @param days  how far back to look (1–365, default 7)
      */
     @GetMapping("/traffic/top-endpoints")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<List<EndpointMetricsDTO>>> getTopEndpoints(
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "7") int days) {
@@ -254,7 +254,7 @@ public class AnalyticsController {
      * @param days  how far back to look (1–365, default 7)
      */
     @GetMapping("/traffic/slowest-endpoints")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<List<EndpointMetricsDTO>>> getSlowestEndpoints(
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "7") int days) {
@@ -268,7 +268,7 @@ public class AnalyticsController {
      * @param days how far back to look (1–365, default 7)
      */
     @GetMapping("/traffic/error-rates")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<ErrorRateDTO>> getErrorRates(
             @RequestParam(defaultValue = "7") int days) {
         int safeDays = Math.min(Math.max(days, 1), 365);
@@ -281,7 +281,7 @@ public class AnalyticsController {
      * @param days how far back to look (1–365, default 30)
      */
     @GetMapping("/traffic/trend")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM')")
     public ResponseEntity<ApiResponse<List<DailyCountDTO>>> getTrafficTrend(
             @RequestParam(defaultValue = "30") int days) {
         int safeDays = Math.min(Math.max(days, 1), 365);
