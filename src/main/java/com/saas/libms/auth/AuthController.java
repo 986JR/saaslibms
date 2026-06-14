@@ -8,10 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -36,15 +33,38 @@ public class AuthController {
     }
 
     //verify institution with email code
-    @PostMapping("/institution/verify")
-    public ResponseEntity<ApiResponse<Void>> verifyInstitution(
-            @Valid @RequestBody VerifyInstitutionRequest request
-            ) {
-        institutionAuthService.verifyInstitution(request);
+//    @PostMapping("/institution/verify")
+//    public ResponseEntity<ApiResponse<Void>> verifyInstitution(
+//            @Valid @RequestBody VerifyInstitutionRequest request
+//            ) {
+//        institutionAuthService.verifyInstitution(request);
+//        return ResponseEntity.ok(
+//                ApiResponse.success("Institution verified. Please Complete Your Admin setup")
+//        );
+//    }
+
+    @GetMapping("/institution/verify-email")
+    public ResponseEntity<ApiResponse<Void>> verifyInstitutionEmail(
+            @RequestParam("token") String token) {
+
+        institutionAuthService.verifyEmail(token);
+
         return ResponseEntity.ok(
-                ApiResponse.success("Institution verified. Please Complete Your Admin setup")
+                ApiResponse.success("Email verified successfully. You may now set up your admin account.")
         );
     }
+
+    @PostMapping("/institution/verify-dns")
+    public ResponseEntity<ApiResponse<Void>> verifyInstitutionDns(
+            @RequestBody @Valid VerifyDnsTxtRequest request) {
+
+        institutionAuthService.verifyDnsTxt(request.institutionPublicId());
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Domain ownership verified successfully.")
+        );
+    }
+
 
     //Create Admin Account
     @PostMapping("/institution/setup-admin")

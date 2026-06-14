@@ -560,5 +560,148 @@ public class EmailService {
         sendHtmlEmail(toEmail, subject, html);
     }
 
+    // EmailService.java — add this method
+
+    public void sendInstitutionVerificationLink(String email, String institutionName, String verificationLink) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(email);
+            helper.setSubject("Verify Your Institution Email — SaasLib");
+            helper.setText(buildVerificationEmailHtml(institutionName, verificationLink), true);
+
+            mailSender.send(message);
+            log.info("Verification email sent to: {}", email);
+
+        } catch (MessagingException e) {
+            log.error("Failed to send verification email to {}: {}", email, e.getMessage());
+            throw new InternalServerException("Failed to send verification email");
+        }
+    }
+
+    private String buildVerificationEmailHtml(String institutionName, String verificationLink) {
+        return """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+          <title>Verify Your Email</title>
+        </head>
+        <body style="margin:0; padding:0; background-color:#f4f6f9; font-family: 'Segoe UI', Arial, sans-serif;">
+
+          <table width="100%%" cellpadding="0" cellspacing="0" style="padding: 40px 0;">
+            <tr>
+              <td align="center">
+
+                <!-- Card -->
+                <table width="600" cellpadding="0" cellspacing="0"
+                       style="background:#ffffff; border-radius:10px;
+                              box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow:hidden;">
+
+                  <!-- Header -->
+                  <tr>
+                    <td style="background: #1a1f36; padding: 36px 40px; text-align:center;">
+                      <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700;
+                                 letter-spacing:0.5px;">
+                        📚 SaasLib
+                      </h1>
+                      <p style="margin:8px 0 0; color:#9ba5c4; font-size:13px;">
+                        Library Management System
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding: 40px 40px 32px;">
+
+                      <h2 style="margin:0 0 12px; color:#1a1f36; font-size:20px; font-weight:600;">
+                        Verify Your Institution Email
+                      </h2>
+
+                      <p style="margin:0 0 10px; color:#4a5568; font-size:15px; line-height:1.6;">
+                        Hi, <strong>%s</strong>,
+                      </p>
+
+                      <p style="margin:0 0 24px; color:#4a5568; font-size:15px; line-height:1.6;">
+                        Thank you for registering your institution on SaasLib. Click the button
+                        below to verify your email address and continue setting up your library.
+                      </p>
+
+                      <!-- Button -->
+                      <table cellpadding="0" cellspacing="0" style="margin: 0 auto 28px;">
+                        <tr>
+                          <td align="center"
+                              style="background:#4f46e5; border-radius:8px;">
+                            <a href="%s"
+                               style="display:inline-block; padding:14px 36px;
+                                      color:#ffffff; font-size:15px; font-weight:600;
+                                      text-decoration:none; letter-spacing:0.3px;">
+                              Verify Email Address
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Fallback link -->
+                      <p style="margin:0 0 8px; color:#718096; font-size:13px; text-align:center;">
+                        Button not working? Copy and paste this link into your browser:
+                      </p>
+                      <p style="margin:0 0 28px; text-align:center;">
+                        <a href="%s"
+                           style="color:#4f46e5; font-size:12px; word-break:break-all;">
+                          %s
+                        </a>
+                      </p>
+
+                      <!-- Warning box -->
+                      <table width="100%%" cellpadding="0" cellspacing="0"
+                             style="background:#fff8e1; border-left:4px solid #f59e0b;
+                                    border-radius:6px; margin-bottom:28px;">
+                        <tr>
+                          <td style="padding:14px 16px;">
+                            <p style="margin:0; color:#92400e; font-size:13px; line-height:1.5;">
+                              ⏱ This link expires in <strong>24 hours</strong>.
+                              If it expires, you will need to register again.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <p style="margin:0; color:#718096; font-size:13px; line-height:1.6;">
+                        If you did not register an institution on SaasLib, you can safely
+                        ignore this email. No account will be created.
+                      </p>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background:#f8fafc; padding:20px 40px;
+                               border-top:1px solid #e8ecf0; text-align:center;">
+                      <p style="margin:0; color:#a0aec0; font-size:12px;">
+                        © 2025 SaasLib · Multi-Tenant Library Management System
+                      </p>
+                      <p style="margin:6px 0 0; color:#a0aec0; font-size:12px;">
+                        This is an automated message — please do not reply.
+                      </p>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Card -->
+
+              </td>
+            </tr>
+          </table>
+
+        </body>
+        </html>
+        """.formatted(institutionName, verificationLink, verificationLink, verificationLink);
+    }
+
 
 }

@@ -181,7 +181,7 @@ public class AnalyticsController {
         return ResponseEntity.ok(ApiResponse.success("Top active users retrieved", data));
     }
 
-    // ── Traffic / Rate Limiting ──────────────────────────────────────────────
+    // Traffic / Rate Limiting
 
     /**
      * Rate limit violation snapshot.

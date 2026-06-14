@@ -49,4 +49,6 @@ public interface InstitutionRepository extends JpaRepository<Institution, UUID> 
     ORDER BY CAST(i.createdAt AS LocalDate) ASC
     """)
     List<Object[]> countRegistrationsPerDay(@Param("from") LocalDateTime from);
+
+    Optional<Institution> findByEmailVerificationToken(String token);
 }

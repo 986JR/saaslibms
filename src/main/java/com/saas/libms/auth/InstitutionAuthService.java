@@ -16,12 +16,14 @@ import com.saas.libms.user.UserRole;
 import com.saas.libms.user.UserStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cglib.core.Local;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -29,108 +31,161 @@ import java.time.LocalDateTime;
 public class InstitutionAuthService {
 
     private final InstitutionRepository institutionRepository;
-    private final InstitutionVerificationRepository verificationRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final DomainVerificationService domainVerificationService;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     @Transactional
     public RegisterInstitutionResponse registerInstitution(RegisterInstitutionRequest request) {
 
+        // 1. Check email not already taken
         if (institutionRepository.existsByEmail(request.email())) {
-            throw new ConflictException("An Insituttion with this email already registerd");
+            throw new ConflictException("An institution with this email is already registered");
         }
 
+        // 2. Extract domains
+        String emailDomain = domainVerificationService.extractEmailDomain(request.email());
+        String websiteDomain = domainVerificationService.extractWebsiteDomain(request.website());
+
+        // 3. Block personal/disposable emails
+        domainVerificationService.assertNotDisposableOrPersonal(emailDomain);
+
+        // 4. Email domain must match website domain
+        domainVerificationService.assertDomainsMatch(emailDomain, websiteDomain);
+
+        // 5. Domain must exist (DNS)
+        domainVerificationService.assertDomainExists(websiteDomain);
+
+        // 6. Website must be reachable
+        domainVerificationService.assertWebsiteReachable(request.website());
+
+        // 7. Email domain must have MX records
+        domainVerificationService.assertHasMxRecords(emailDomain);
+
+        // 8. Generate email verification token
+        String token = UUID.randomUUID().toString().replace("-", "");
+        String dnsTxtValue = domainVerificationService.generateDnsTxtValue();
+
+        // 9. Save institution
         Institution institution = Institution.builder()
                 .publicId(PublicIdGenerator.generate("INST"))
                 .name(request.name())
                 .email(request.email())
+                .website(request.website())
+                .domain(websiteDomain)
                 .phone(request.phone())
                 .address(request.address())
                 .status(InstitutionStatus.PENDING)
                 .isVerified(false)
+                .emailVerified(false)
+                .domainVerified(false)
+                .domainChecksPassed(true)   // all checks above passed
+                .emailVerificationToken(token)
+                .emailTokenExpiresAt(LocalDateTime.now().plusHours(24))
+                .dnsTxtRecord(dnsTxtValue)
                 .build();
+
         institutionRepository.save(institution);
 
-        // Generate a 6 char code and save it with 5mins expiry
-        String code = PublicIdGenerator.generateVerificationCode();
+        // 10. Send verification email with link
+        String verificationLink = baseUrl + "/api/v1/auth/institution/verify-email?token=" + token;
+        emailService.sendInstitutionVerificationLink(institution.getEmail(), institution.getName(), verificationLink);
 
-        InstitutionVerification verification = InstitutionVerification.builder()
-                .institution(institution)
-                .verificationCode(code)
-                .expiesAt(LocalDateTime.now().plusMinutes(5))
-                .verified(false)
-                .build();
-        verificationRepository.save(verification);
+        log.info("Institution registered: {} | publicId: {}", institution.getEmail(), institution.getPublicId());
 
-        emailService.sendInstitutionVerificationCode(institution.getEmail(), institution.getName(), code);
-        log.info("Institution registerd: {} | publicId: {}", institution.getEmail(), institution.getPublicId());
         return new RegisterInstitutionResponse(
                 institution.getPublicId(),
-                "Verification Code sent to " + institution.getEmail() + ". Please check your inbox."
+                "A verification link has been sent to " + institution.getEmail() + ". Please check your inbox. Link expires in 24 hours."
         );
     }
 
+    /**
+     * Called when institution admin clicks the link in their email.
+     * Replaces the old verifyInstitution(code) method.
+     */
     @Transactional
-    public void verifyInstitution(VerifyInstitutionRequest request){
+    public void verifyEmail(String token) {
+        Institution institution = institutionRepository.findByEmailVerificationToken(token)
+                .orElseThrow(() -> new BadRequestException("Invalid or expired verification link"));
 
-        //Find By Public Id
-        Institution institution = institutionRepository.findByPublicId(request.InstitutionPublicId())
-                .orElseThrow(()-> new ResourceNotFoundException("Institution not found"));
-
-        //Gurd if verified
-        if(institution.isVerified()) {
-            throw  new BadRequestException("Institution is verified");
+        if (institution.isEmailVerified()) {
+            throw new BadRequestException("Email already verified");
         }
 
-        // Get latest unverified code
-        InstitutionVerification verification = verificationRepository.findLatestUnverifiedByInstitution(institution)
-                .orElseThrow(()-> new BadRequestException("No pending verification found. Please request a new code"));
-
-        //chech code expiry
-        if(LocalDateTime.now().isAfter(verification.getExpiesAt())) {
-            throw new BadRequestException("Verification code has expired. Please request a new one");
-
+        if (LocalDateTime.now().isAfter(institution.getEmailTokenExpiresAt())) {
+            throw new BadRequestException("Verification link has expired. Please register again or request a new link.");
         }
 
-        //MArk as done
-        verification.setVerified(true);
-        verificationRepository.save(verification);
+        institution.setEmailVerified(true);
+        institution.setEmailVerificationToken(null);   // clear token after use
+        institution.setEmailTokenExpiresAt(null);
 
-        //Activate Insitution
+        // If you are NOT requiring DNS TXT verification, approve here
         institution.setVerified(true);
         institution.setStatus(InstitutionStatus.ACTIVE);
+
         institutionRepository.save(institution);
-
-        log.info("Insitution verified: {} | publicId:{}", institution.getEmail(), institution.getPublicId());
-
+        log.info("Institution email verified: {} | publicId: {}", institution.getEmail(), institution.getPublicId());
     }
 
+    /**
+     * Optional: institution admin adds TXT record to DNS and calls this to prove domain ownership.
+     * Call this AFTER verifyEmail() succeeds.
+     */
+    @Transactional
+    public void verifyDnsTxt(String institutionPublicId) {
+        Institution institution = institutionRepository.findByPublicId(institutionPublicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Institution not found"));
+
+        if (!institution.isEmailVerified()) {
+            throw new BadRequestException("Email must be verified before DNS verification");
+        }
+
+        if (institution.isDomainVerified()) {
+            throw new BadRequestException("Domain already verified");
+        }
+
+        boolean verified = domainVerificationService.checkDnsTxtRecord(
+                institution.getDomain(),
+                institution.getDnsTxtRecord()
+        );
+
+        if (!verified) {
+            throw new BadRequestException(
+                    "TXT record not found. Please add this to your DNS:\n" +
+                            "Host: @\nValue: " + institution.getDnsTxtRecord() +
+                            "\nThen try again. DNS changes can take up to 48 hours."
+            );
+        }
+
+        institution.setDomainVerified(true);
+        institutionRepository.save(institution);
+        log.info("Institution domain verified via TXT: {} | publicId: {}", institution.getDomain(), institution.getPublicId());
+    }
 
     @Transactional
     public void setupAdmin(SetUpAdminRequest request) {
-        //Find institution
         Institution institution = institutionRepository
                 .findByPublicId(request.institutionPublicId())
-                .orElseThrow(()-> new ResourceNotFoundException("Institution not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Institution not found"));
 
-        //Must be verified
-        if(!institution.isVerified()) {
-            throw new BadRequestException("Institution must be verified before setting up an admin account");
-
+        // Must have email verified at minimum
+        if (!institution.isEmailVerified()) {
+            throw new BadRequestException("Institution email must be verified before setting up an admin account");
         }
 
-        //Gurad if admin already exists
-        if(userRepository.existsAdminForInstitution(institution.getId())) {
-            throw  new ConflictException("An admin account already exists for this institution");
+        if (userRepository.existsAdminForInstitution(institution.getId())) {
+            throw new ConflictException("An admin account already exists for this institution");
         }
 
-        //Password must mathc
-        if(!request.password().equals(request.confirmPassword())) {
-            throw new BadRequestException("Passwords Do not Match");
+        if (!request.password().equals(request.confirmPassword())) {
+            throw new BadRequestException("Passwords do not match");
         }
 
-        //Create the dmin user
         User admin = User.builder()
                 .publicId(PublicIdGenerator.generate("USER"))
                 .institution(institution)
@@ -143,8 +198,6 @@ public class InstitutionAuthService {
                 .build();
 
         userRepository.save(admin);
-
-        log.info("Admin created for institution:{} | userPublic: {}", institution.getPublicId(), admin.getInstitution());
-
+        log.info("Admin created for institution: {}", institution.getPublicId());
     }
 }

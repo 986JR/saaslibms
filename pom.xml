@@ -145,6 +145,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- DNS lookups (MX records, TXT records, A records) -->
+        <dependency>
+            <groupId>dnsjava</groupId>
+            <artifactId>dnsjava</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+
+
 
     </dependencies>
 

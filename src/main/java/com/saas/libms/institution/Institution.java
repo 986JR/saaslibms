@@ -43,6 +43,35 @@ public class Institution {
     @Builder.Default
     private boolean isVerified = false;
 
+    @Column(name = "website")
+    private String website;
+
+    @Column(name = "domain")
+    private String domain;   // extracted from website — e.g. "udom.ac.tz"
+
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    @Column(name = "domain_verified", nullable = false)
+    @Builder.Default
+    private boolean domainVerified = false;
+
+    // Token for email verification link (replaces the 6-char code)
+    @Column(name = "email_verification_token", length = 64)
+    private String emailVerificationToken;
+
+    @Column(name = "email_token_expires_at")
+    private LocalDateTime emailTokenExpiresAt;
+
+    // DNS TXT record value they must add to prove domain ownership
+    @Column(name = "dns_txt_record", length = 100)
+    private String dnsTxtRecord;
+
+    @Column(name = "domain_checks_passed", nullable = false)
+    @Builder.Default
+    private boolean domainChecksPassed = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime   createdAt;

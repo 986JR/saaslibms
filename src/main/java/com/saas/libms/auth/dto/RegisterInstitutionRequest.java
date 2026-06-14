@@ -17,7 +17,9 @@ public record RegisterInstitutionRequest(
         String phone,
 
         @NotBlank(message = "Addres is required")
-        String address
+        String address,
+
+        @NotBlank String website
 
 ) {
 }
