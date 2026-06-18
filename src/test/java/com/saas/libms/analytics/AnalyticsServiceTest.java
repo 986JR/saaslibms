@@ -816,9 +816,9 @@ class AnalyticsServiceTest {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+    //
     // 12. getRateLimitViolations()
-    // ══════════════════════════════════════════════════════════════════════════
+    //
 
     @Nested
     @DisplayName("getRateLimitViolations()")
@@ -885,6 +885,7 @@ class AnalyticsServiceTest {
             RateLimitViolationsDTO result = analyticsService.getRateLimitViolations();
 
             assertThat(result.blockedOnLogin()).isZero();
+
             assertThat(result.blockedOnRegister()).isZero();
             assertThat(result.blockedOnVerify()).isZero();
             assertThat(result.blockedOnForgotPassword()).isZero();
