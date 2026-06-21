@@ -801,6 +801,7 @@ class AnalyticsServiceTest {
 
             verify(auditLogRepository).findTopActiveUsers(
                     argThat(p -> p.getPageSize() == 50));
+                    //here
         }
 
         @Test
