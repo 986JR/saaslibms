@@ -92,7 +92,7 @@ public class InstitutionAuthService {
         institutionRepository.save(institution);
 
         // 10. Send verification email with link
-        String verificationLink = baseUrl + "/api/v1/auth/institution/verify-email?token=" + token;
+        String verificationLink = baseUrl + "/verify-email?token=" + token;
         emailService.sendInstitutionVerificationLink(institution.getEmail(), institution.getName(), verificationLink);
 
         log.info("Institution registered: {} | publicId: {}", institution.getEmail(), institution.getPublicId());
