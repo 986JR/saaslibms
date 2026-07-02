@@ -47,30 +47,30 @@ public class InstitutionAuthService {
             throw new ConflictException("An institution with this email is already registered");
         }
 
-        // 2. Extract domains
+        // 2. Extract domains.
         String emailDomain = domainVerificationService.extractEmailDomain(request.email());
         String websiteDomain = domainVerificationService.extractWebsiteDomain(request.website());
 
-        // 3. Block personal/disposable emails
+        // 3. Block personal/disposable emails.
         domainVerificationService.assertNotDisposableOrPersonal(emailDomain);
 
-        // 4. Email domain must match website domain
+        // 4. Email domain must match website domain.
         domainVerificationService.assertDomainsMatch(emailDomain, websiteDomain);
 
-        // 5. Domain must exist (DNS)
+        // 5. Domain must exist (DNS).
         domainVerificationService.assertDomainExists(websiteDomain);
 
-        // 6. Website must be reachable
+        // 6. Website must be reachable.
         domainVerificationService.assertWebsiteReachable(request.website());
 
-        // 7. Email domain must have MX records
+        // 7. Email domain must have MX records.
         domainVerificationService.assertHasMxRecords(emailDomain);
 
-        // 8. Generate email verification token
+        // 8. Generate email verification token.
         String token = UUID.randomUUID().toString().replace("-", "");
         String dnsTxtValue = domainVerificationService.generateDnsTxtValue();
 
-        // 9. Save institution
+        // 9. Save institution.
         Institution institution = Institution.builder()
                 .publicId(PublicIdGenerator.generate("INST"))
                 .name(request.name())
@@ -83,7 +83,7 @@ public class InstitutionAuthService {
                 .isVerified(false)
                 .emailVerified(false)
                 .domainVerified(false)
-                .domainChecksPassed(true)   // all checks above passed
+                .domainChecksPassed(true)   // all checks above passed,
                 .emailVerificationToken(token)
                 .emailTokenExpiresAt(LocalDateTime.now().plusHours(24))
                 .dnsTxtRecord(dnsTxtValue)
@@ -106,6 +106,7 @@ public class InstitutionAuthService {
     /**
      * Called when institution admin clicks the link in their email.
      * Replaces the old verifyInstitution(code) method.
+     *
      */
     @Transactional
     public void verifyEmail(String token) {
