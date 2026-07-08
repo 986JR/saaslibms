@@ -106,7 +106,6 @@ public class InstitutionAuthService {
     /**
      * Called when institution admin clicks the link in their email.
      * Replaces the old verifyInstitution(code) method.
-     *
      */
     @Transactional
     public void verifyEmail(String token) {

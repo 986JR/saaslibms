@@ -1,7 +1,7 @@
 package com.saas.libms.exception;
 
 import org.springframework.http.HttpStatus;
-
+//AppException
 public class AppException extends RuntimeException {
 
     private final HttpStatus status;
